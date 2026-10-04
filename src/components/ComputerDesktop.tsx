@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
 import { seedBoard, useTaskStore } from '../store/tasks'
+import { ChatDesk } from './ChatDesk'
+import { FilesDesk } from './FilesDesk'
 import { StatsDesk } from './StatsDesk'
 import { TaskBoard, type Assignable } from './TaskBoard'
 
@@ -7,8 +9,12 @@ export type DeskBoard = { id: string; title: string }
 
 const PROGRAMS = [
   { id: 'tasks', label: 'Tasks' },
+  { id: 'chat', label: 'Chat' },
+  { id: 'files', label: 'Files' },
   { id: 'stats', label: 'Stats' },
 ] as const
+
+type ProgramId = (typeof PROGRAMS)[number]['id']
 
 export function useDeskSession(sitting: boolean, atDesk: boolean) {
   const [open, setOpen] = useState(false)
@@ -45,7 +51,7 @@ export function ComputerDesktop({
   onStand: () => void
   onLeave: () => void
 }) {
-  const [app, setApp] = useState<(typeof PROGRAMS)[number]['id'] | null>('tasks')
+  const [app, setApp] = useState<ProgramId | null>(null)
   const [boardId, setBoardId] = useState<string | null>(null)
   const [now, setNow] = useState(() => new Date())
 
@@ -91,7 +97,7 @@ export function ComputerDesktop({
           </div>
         </header>
 
-        <nav className="absolute top-16 bottom-4 left-3 z-20 flex w-24 flex-col gap-3 sm:left-4" aria-label="Programs">
+        <nav className="absolute top-16 bottom-4 left-3 z-20 flex w-24 flex-col gap-3 overflow-y-auto sm:left-4" aria-label="Programs">
           {PROGRAMS.map((program) => {
             const active = app === program.id
             return (
@@ -101,7 +107,7 @@ export function ComputerDesktop({
                 aria-pressed={active}
                 onClick={() => {
                   setBoardId(null)
-                  setApp(program.id)
+                  setApp((current) => (current === program.id ? null : program.id))
                 }}
                 className="flex flex-col items-center gap-1.5"
               >
@@ -111,7 +117,7 @@ export function ComputerDesktop({
                     active ? 'ring-2 ring-ink' : '',
                   ].join(' ')}
                 >
-                  {program.id === 'stats' ? <StatsMark /> : <TasksMark />}
+                  <ProgramMark id={program.id} />
                 </span>
                 <span className="rounded-full bg-paper/95 px-2 py-0.5 text-xs font-bold text-ink">{program.label}</span>
               </button>
@@ -149,6 +155,8 @@ export function ComputerDesktop({
           </div>
         ) : null}
 
+        {app === 'chat' ? <ChatDesk officeId={officeId} people={people} onClose={() => setApp(null)} /> : null}
+        {app === 'files' ? <FilesDesk officeId={officeId} onClose={() => setApp(null)} /> : null}
         {app === 'stats' ? <StatsDesk officeId={officeId} onClose={() => setApp(null)} /> : null}
       </div>
     </div>
@@ -171,9 +179,34 @@ function Wallpaper() {
       <div className="absolute inset-0 flex flex-col items-center justify-center px-6 text-center text-ink">
         <img src="/branding/corplift-logo.svg" alt="CorpLift" className="w-56 max-w-[70%] sm:w-72" />
         <p className="mt-6 text-4xl leading-tight font-black text-ink sm:text-6xl">CORP Realm</p>
-        <p className="mt-2 text-sm text-slate">The desk is on. Tasks and Stats are on the left.</p>
+        <p className="mt-2 text-sm text-slate">The desk is on. Open a program on the left.</p>
       </div>
     </div>
+  )
+}
+
+function ProgramMark({ id }: { id: ProgramId }) {
+  if (id === 'stats') return <StatsMark />
+  if (id === 'chat') return <ChatMark />
+  if (id === 'files') return <FilesMark />
+  return <TasksMark />
+}
+
+function ChatMark() {
+  return (
+    <span className="relative h-9 w-9 text-ink" aria-hidden="true">
+      <span className="absolute top-1 left-0 h-6 w-7 rounded-lg border-2 border-ink" />
+      <span className="absolute right-0 bottom-1 h-5 w-6 rounded-md border-2 border-lift bg-paper" />
+    </span>
+  )
+}
+
+function FilesMark() {
+  return (
+    <span className="relative h-9 w-8" aria-hidden="true">
+      <span className="absolute top-1 left-0 h-2.5 w-4 rounded-t-md bg-lift" />
+      <span className="absolute top-3 left-0 h-5 w-8 rounded-md rounded-tl-none bg-ink" />
+    </span>
   )
 }
 
@@ -216,7 +249,7 @@ function BoardGlance({ board, onOpen }: { board: DeskBoard; onOpen: () => void }
       </div>
       <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
         {data.columns.map((column) => {
-          const cards = column.cardIds.map((id) => data.cards[id]).filter((card) => card !== undefined)
+          const cards = column.cardIds.map((id) => data.cards[id]).filter((card) => card !== undefined && !card.archived)
           return (
             <div key={column.id} className="w-40 shrink-0 rounded-2xl bg-paper p-2 text-ink">
               <div className="flex items-center justify-between gap-2">

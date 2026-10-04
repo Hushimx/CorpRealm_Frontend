@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { CanvasTexture, SRGBColorSpace } from 'three'
-import { seedBoard, useTaskStore, type TaskBoardData } from '../../store/tasks'
+import { LABEL_HEX, asLabelColor, seedBoard, useTaskStore, type TaskBoardData, type TaskCard } from '../../store/tasks'
 
 const PAPER = '#ffffff'
 const CREAM = '#f3f6fc'
@@ -87,7 +87,7 @@ function paintBoard(data: TaskBoardData) {
     const header = fit(context, column.title, colW - 110)
     context.fillText(header, x + 22, y + 46)
 
-    const cards = column.cardIds.map((id) => data.cards[id]).filter((card) => card !== undefined)
+    const cards = column.cardIds.map((id) => data.cards[id]).filter((card): card is TaskCard => card !== undefined && !card.archived)
     const badge = String(cards.length)
     context.font = `700 ${Math.max(18, titleSize - 10)}px "Thmanyah Sans", system-ui, sans-serif`
     const badgeW = Math.max(42, context.measureText(badge).width + 22)
@@ -118,6 +118,11 @@ function paintBoard(data: TaskBoardData) {
       roundRect(context, x + 14, cy, colW - 28, cardH, 16)
       context.fillStyle = PAPER
       context.fill()
+      const cover = asLabelColor(card.cover)
+      if (cover) {
+        context.fillStyle = LABEL_HEX[cover]
+        context.fillRect(x + 22, cy + 8, Math.min(72, colW - 52), 6)
+      }
       context.textAlign = 'left'
       context.fillStyle = INK
       context.font = `700 ${cardTitle}px "Thmanyah Sans", system-ui, sans-serif`
