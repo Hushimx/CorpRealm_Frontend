@@ -1,0 +1,419 @@
+import { doorId, doorInReach, toggleDoor, useDoors } from '../office/doors'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { Link } from 'react-router'
+import { AccountCard } from '../components/AccountCard'
+import { KeyCap } from '../components/KeyCap'
+import { OfficeStage, type Presence } from '../components/scene/OfficeWorld'
+import { ChessGame, chessInReach } from '../chess'
+import { XoGame } from '../xo'
+import { ComputerDesktop, useDeskSession } from '../components/ComputerDesktop'
+import { TaskBoard } from '../components/TaskBoard'
+import { boardInReach, OFFICE_BOARDS } from '../office/boards'
+import { clearHeld, holdKey, queueJump, queueSit } from '../office/input'
+import { doors, props, rooms } from '../office/layout'
+import { MediaBar } from '../components/MediaBar'
+import { OfficeRoll, VoiceBar, VoiceRoster, floorMates, useOfficeListOpen } from '../components/VoiceOverlay'
+import { useOfficeMedia } from '../net/media'
+import { presenceLine, useOfficeRoom } from '../net/room'
+import type { Motion } from '../components/scene/OfficeWorld'
+import { useOfficePeople } from '../net/people'
+import { useSession } from '../net/session'
+import { useAvatarStore } from '../store/avatar'
+
+const STUDIO_CHESS = props.flatMap((prop) => (prop.kind === 'chess' ? [{ id: `${prop.x},${prop.z}`, x: prop.x, z: prop.z }] : []))
+const STUDIO_XO = props.flatMap((prop) => (prop.kind === 'xo' ? [{ id: `${prop.x},${prop.z}`, x: prop.x, z: prop.z }] : []))
+
+const pads = [
+  { key: 'w', label: 'W' },
+  { key: 'a', label: 'A' },
+  { key: 's', label: 'S' },
+  { key: 'd', label: 'D' },
+  { key: ' ', label: 'Jump' },
+  { key: 'shift', label: 'Sprint' },
+]
+
+export function OfficePage() {
+  const name = useAvatarStore((state) => state.name)
+  const face = useAvatarStore((state) => state.face)
+  const outfit = useAvatarStore((state) => state.outfit)
+  const pants = useAvatarStore((state) => state.pants)
+  const [presence, setPresence] = useState<Presence>({
+    x: 0,
+    z: 5.4,
+    yaw: 0,
+    room: 'Open Workspace',
+    roomId: 'open',
+    nearSeat: false,
+    sitting: false,
+    atDesk: false,
+    seatId: '',
+  })
+  const [looking, setLooking] = useState(false)
+  const listOpen = useOfficeListOpen()
+  const [overview, setOverview] = useState(true)
+  const [openBoard, setOpenBoard] = useState<string | null>(null)
+  const [chessOpen, setChessOpen] = useState(false)
+  const [chessId, setChessId] = useState<string | null>(null)
+  const [xoOpen, setXoOpen] = useState(false)
+  const [xoId, setXoId] = useState<string | null>(null)
+  const user = useSession((state) => state.user)
+  const people = useOfficePeople('hq')
+  const room = useOfficeRoom('hq', !overview)
+  const ear = useRef({ x: presence.x, z: presence.z, yaw: presence.yaw })
+  const follow = useCallback((motion: Motion) => {
+    ear.current = { x: motion.x, z: motion.z, yaw: motion.yaw }
+    room.trackMotion(motion)
+  }, [room.trackMotion])
+  const media = useOfficeMedia(
+    room.livekit,
+    !overview && room.connected,
+    ear,
+    room.others.map((person) => ({ userId: person.userId, x: person.x, z: person.z })),
+  )
+  const company = presenceLine({
+    signedIn: Boolean(user),
+    active: !overview,
+    connected: room.connected,
+    notice: room.notice,
+    names: room.others.map((person) => person.name.trim() || 'Guest'),
+  })
+  const computer = useDeskSession(!overview && presence.sitting, presence.atDesk)
+  const busy = overview || openBoard || computer.open || chessOpen || xoOpen
+  const doorStates = useDoors(state => state.open)
+  const movingDoors = useDoors(state => state.moving)
+  const obstructedDoors = useDoors(state => state.obstructed)
+  const nearDoor = busy || presence.sitting ? null : doorInReach(doors, presence.x, presence.z)
+  const doorIsOpen = nearDoor ? Boolean(doorStates[doorId(nearDoor)]) : false
+  const doorObstructed = nearDoor ? doorIsOpen && Boolean(obstructedDoors[doorId(nearDoor)]) : false
+  const near = busy ? null : boardInReach(presence.x, presence.z)
+  const nearChess = busy || presence.sitting ? null : chessInReach(presence.x, presence.z, STUDIO_CHESS)
+  const nearXo = busy || presence.sitting || nearChess ? null : chessInReach(presence.x, presence.z, STUDIO_XO)
+  const board = OFFICE_BOARDS.find((item) => item.id === openBoard) ?? null
+
+  function openTasks(id: string) {
+    clearHeld()
+    if (document.pointerLockElement) document.exitPointerLock()
+    setOpenBoard(id)
+  }
+
+  function openChess() {
+    clearHeld()
+    if (document.pointerLockElement) document.exitPointerLock()
+    if (nearChess) {
+      setChessId(nearChess.id)
+      if (room.connected) room.claimChess(nearChess.id)
+    }
+    setChessOpen(true)
+  }
+
+  function openXo() {
+    clearHeld()
+    if (document.pointerLockElement) document.exitPointerLock()
+    if (nearXo) {
+      setXoId(nearXo.id)
+      if (room.connected) room.claimXo(nearXo.id)
+    }
+    setXoOpen(true)
+  }
+
+  useEffect(() => {
+    room.notePose(presence)
+  }, [presence, room.notePose])
+
+  useEffect(() => {
+    const sync = () => setLooking(document.pointerLockElement instanceof HTMLCanvasElement)
+    document.addEventListener('pointerlockchange', sync)
+    return () => document.removeEventListener('pointerlockchange', sync)
+  }, [])
+
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (event.code !== 'KeyE' || event.repeat) return
+      const target = event.target
+      if (target instanceof HTMLElement && target.closest('input, textarea, select, [contenteditable=true], [role=textbox]')) return
+      if (overview) return
+      if (openBoard) {
+        event.preventDefault()
+        setOpenBoard(null)
+        return
+      }
+      if (computer.open) return
+      if (chessOpen) {
+        event.preventDefault()
+        setChessOpen(false)
+        return
+      }
+      if (xoOpen) {
+        event.preventDefault()
+        setXoOpen(false)
+        return
+      }
+      if (presence.sitting) {
+        event.preventDefault()
+        queueSit()
+        return
+      }
+      if (nearDoor) {
+        event.preventDefault()
+        toggleDoor(nearDoor)
+        return
+      }
+      if (near) {
+        event.preventDefault()
+        openTasks(near.id)
+        return
+      }
+      if (nearChess) {
+        event.preventDefault()
+        openChess()
+        return
+      }
+      if (nearXo) {
+        event.preventDefault()
+        openXo()
+        return
+      }
+      if (!presence.nearSeat) return
+      event.preventDefault()
+      queueSit()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [chessOpen, computer.open, nearDoor, near, nearChess, nearXo, openBoard, overview, presence.nearSeat, presence.sitting, xoOpen])
+
+  return (
+    <div className={`relative h-[calc(100svh-4.25rem)] bg-night ${looking ? 'cursor-none' : ''}`}>
+      <OfficeStage parts={{ face, outfit, pants }} others={room.others} onPresence={setPresence} onPlace={room.standAt} onMotion={follow} place={room.place} screens={media.screens} cameras={media.cameras} overview={overview} paused={board !== null || computer.open || chessOpen || xoOpen} />
+      <div className="pointer-events-none absolute inset-0">
+        <div className="absolute inset-x-3 top-3 flex flex-col items-start gap-3 sm:inset-x-4 sm:top-4 sm:flex-row sm:justify-between">
+        <aside className="pointer-events-auto max-w-[16rem] rounded-card bg-paper px-4 py-3 text-ink shadow-card">
+          <img src="/branding/corplift-logo.svg" alt="CorpLift" className="mb-3 h-6 w-auto" />
+          <p className="text-xs font-bold tracking-[0.16em] text-ink/60 uppercase">CorpLift HQ</p>
+          <h1 className="mt-1 font-bold text-3xl leading-none">{overview ? 'The studio' : presence.room}</h1>
+          <p className="mt-1 text-sm text-ink/75">{overview ? 'A little space for big ideas.' : `${name.trim() || 'Unnamed'} is on the floor`}</p>
+          <p className="mt-1 text-xs text-ink/70">{company}</p>
+          <AccountCard />
+          {!overview && room.livekit ? <MediaBar media={media} /> : null}
+          {!overview && room.connected && !room.livekit ? <p className="mt-2 text-xs text-ink/60">Voice server is not running.</p> : null}
+          <p className="mt-2 text-xs leading-relaxed text-ink/60">
+            {overview ? 'Drag to orbit · Scroll to zoom. Step inside, then press E at a chair, a board, or a game table.' : 'W A S D to move. Shift to sprint. Space to jump. E sits on a chair. A desk opens the computer, a board opens tasks, and chess or XO tables open a game. Hold Tab for this visit and everyone inside. Esc releases the cursor.'}
+          </p>
+          <button type="button" onClick={() => { setOverview(!overview); if (document.pointerLockElement) document.exitPointerLock() }} className="mt-3 mr-3 rounded-full bg-ink px-4 py-2 text-xs font-bold text-paper">
+            {overview ? 'Walk inside ↗' : 'Office overview ↗'}
+          </button>
+          <Link
+            to="/avatar"
+            className="mt-3 inline-block text-sm font-medium text-lift underline decoration-lift/40 underline-offset-2"
+          >
+            Change avatar
+          </Link>
+          <Link
+            to="/build"
+            className="mt-2 block text-sm font-medium text-lift underline decoration-lift/40 underline-offset-2"
+          >
+            Build an office
+          </Link>
+        </aside>
+
+        <div className="flex flex-col items-end gap-3">
+          {!overview && room.livekit ? <VoiceRoster media={media} faces={{ ...(user ? { [user.id]: face } : {}), ...Object.fromEntries(room.others.map((person) => [person.userId, person.face])) }} /> : null}
+        <aside className="pointer-events-auto rounded-card bg-paper p-2 text-ink shadow-card">
+          <svg viewBox="-19 -25 38 38" className="h-36 w-48 sm:h-40 sm:w-56" role="img" aria-label="Office map">
+            {rooms.map((room) => (
+              <g key={room.id}>
+                <rect
+                  x={room.x - room.w / 2}
+                  y={room.z - room.d / 2}
+                  width={room.w}
+                  height={room.d}
+                  fill={room.id === presence.roomId ? '#e6eeff' : '#ffffff'}
+                  stroke="#000000"
+                  strokeWidth={0.16}
+                />
+                <text
+                  x={room.x}
+                  y={room.z}
+                  textAnchor="middle"
+                  dominantBaseline="middle"
+                  fontSize="1.15"
+                  fill="#000000"
+                >
+                  {room.short}
+                </text>
+              </g>
+            ))}
+            <circle cx={presence.x} cy={presence.z} r="0.55" fill="#2765ed" />
+          </svg>
+        </aside>
+        </div>
+        </div>
+
+        <OfficeRoll
+          active={!overview && room.connected}
+          people={floorMates(user ? { id: user.id, name, face, x: presence.x, z: presence.z, since: room.joinedAt } : null, room.others)}
+          here={{ x: presence.x, z: presence.z }}
+          voices={media.voices}
+        />
+
+        {looking || overview || listOpen ? null : (
+          <div className="absolute inset-0 flex items-center justify-center px-4">
+            <p className="flex max-w-xl flex-wrap items-center justify-center gap-1.5 rounded-full bg-paper px-4 py-2 text-sm font-medium text-ink shadow-pop">
+              <KeyCap name="click" alt="Click" className="h-8 w-auto" />
+              <span>or</span>
+              <KeyCap name="w" alt="W" className="h-8 w-auto" />
+              <KeyCap name="a" alt="A" className="h-8 w-auto" />
+              <KeyCap name="s" alt="S" className="h-8 w-auto" />
+              <KeyCap name="d" alt="D" className="h-8 w-auto" />
+              <span>The cursor hides.</span>
+              <KeyCap name="esc" alt="Esc" className="h-8 w-auto" />
+              <span>for the menu.</span>
+            </p>
+          </div>
+        )}
+
+        {!overview && !board && !computer.open && presence.sitting && presence.atDesk ? (
+          <div className="pointer-events-auto absolute bottom-20 left-1/2 flex -translate-x-1/2 items-center gap-2 sm:bottom-24">
+            <button
+              type="button"
+              onClick={computer.show}
+              className="rounded-full bg-ink px-4 py-2 text-sm font-medium text-paper shadow-pop"
+            >
+              Use computer
+            </button>
+            <button
+              type="button"
+              onClick={() => queueSit()}
+              className="flex items-center gap-2 rounded-full bg-paper px-4 py-2 text-sm font-medium text-ink shadow-pop"
+            >
+              <KeyCap name="e" alt="E" className="h-8 w-auto" />
+              Stand up
+            </button>
+          </div>
+        ) : !overview && !board && !computer.open && presence.sitting ? (
+          <button
+            type="button"
+            onClick={() => queueSit()}
+            className="pointer-events-auto absolute bottom-20 left-1/2 flex -translate-x-1/2 items-center gap-2 rounded-full bg-paper px-4 py-2 text-sm font-medium text-ink shadow-pop sm:bottom-24"
+          >
+            <KeyCap name="e" alt="E" className="h-8 w-auto" />
+            Stand up
+          </button>
+        ) : nearDoor ? (
+          <button type="button" onClick={() => toggleDoor(nearDoor)} disabled={doorObstructed}
+            className="pointer-events-auto absolute bottom-20 left-1/2 flex -translate-x-1/2 items-center gap-2 rounded-full bg-paper px-4 py-2 text-sm font-medium text-ink shadow-lg disabled:opacity-70 sm:bottom-24">
+            <KeyCap name="e" alt="E" className="h-8 w-auto" />
+            <span className="flex flex-col items-start"><span>{doorObstructed ? 'Step away to close' : doorIsOpen ? 'Close door' : 'Open door'}</span><span className="text-xs text-ink/55">{nearDoor.label ?? 'Office'}{movingDoors[doorId(nearDoor)] ? doorIsOpen ? ' · Opening…' : ' · Closing…' : ''}</span></span>
+          </button>
+        ) : nearChess ? (
+          <button
+            type="button"
+            onClick={openChess}
+            className="pointer-events-auto absolute bottom-20 left-1/2 flex -translate-x-1/2 items-center gap-2 rounded-full bg-paper px-4 py-2 text-sm font-medium text-ink shadow-pop sm:bottom-24"
+          >
+            <KeyCap name="e" alt="E" className="h-8 w-auto" />
+            Play chess
+          </button>
+        ) : nearXo ? (
+          <button
+            type="button"
+            onClick={openXo}
+            className="pointer-events-auto absolute bottom-20 left-1/2 flex -translate-x-1/2 items-center gap-2 rounded-full bg-paper px-4 py-2 text-sm font-medium text-ink shadow-pop sm:bottom-24"
+          >
+            <KeyCap name="e" alt="E" className="h-8 w-auto" />
+            Play XO
+          </button>
+        ) : near ? (
+          <button
+            type="button"
+            onClick={() => openTasks(near.id)}
+            className="pointer-events-auto absolute bottom-20 left-1/2 flex -translate-x-1/2 items-center gap-2 rounded-full bg-paper px-4 py-2 text-sm font-medium text-ink shadow-pop sm:bottom-24"
+          >
+            <KeyCap name="e" alt="E" className="h-8 w-auto" />
+            Open tasks
+            <span className="text-ink/60">{near.title}</span>
+          </button>
+        ) : !overview && presence.nearSeat ? (
+          <button
+            type="button"
+            onClick={() => queueSit()}
+            className="pointer-events-auto absolute bottom-20 left-1/2 flex -translate-x-1/2 items-center gap-2 rounded-full bg-paper px-4 py-2 text-sm font-medium text-ink shadow-pop sm:bottom-24"
+          >
+            <KeyCap name="e" alt="E" className="h-8 w-auto" />
+            Sit down
+          </button>
+        ) : null}
+
+        {!overview && room.livekit ? <VoiceBar media={media} /> : null}
+        {!overview && !board && <div className="pointer-events-auto absolute bottom-3 left-1/2 flex -translate-x-1/2 flex-wrap justify-center gap-1.5 sm:bottom-4">
+          {pads.map((pad) => (
+            <button
+              key={pad.key}
+              type="button"
+              aria-label={pad.label}
+              className="group rounded-md p-0"
+              onPointerDown={(event) => {
+                event.preventDefault()
+                if (pad.key === ' ') queueJump()
+                else holdKey(pad.key, true)
+              }}
+              onPointerUp={() => holdKey(pad.key, false)}
+              onPointerLeave={() => holdKey(pad.key, false)}
+              onPointerCancel={() => holdKey(pad.key, false)}
+            >
+              <KeyCap name={pad.key} alt={pad.label} />
+            </button>
+          ))}
+        </div>}
+      </div>
+      {board ? <TaskBoard boardId={board.id} title={board.title} people={people} onClose={() => setOpenBoard(null)} /> : null}
+      {chessOpen ? (
+        <ChessGame
+          onClose={() => {
+            setChessOpen(false)
+            setChessId(null)
+          }}
+          shared={
+            room.connected && chessId && room.chess[chessId]
+              ? {
+                  game: room.chess[chessId].game,
+                  side: room.chess[chessId].white === room.sessionId ? 'w' : room.chess[chessId].black === room.sessionId ? 'b' : null,
+                  onMove: (move) => room.moveChess(chessId, move.from, move.to, move.promotion),
+                }
+              : undefined
+          }
+        />
+      ) : null}
+      {xoOpen ? (
+        <XoGame
+          onClose={() => {
+            setXoOpen(false)
+            setXoId(null)
+          }}
+          shared={
+            room.connected && xoId && room.xo[xoId]
+              ? {
+                  game: room.xo[xoId].game,
+                  side: room.xo[xoId].x === room.sessionId ? 'x' : room.xo[xoId].o === room.sessionId ? 'o' : null,
+                  full: Boolean(room.xo[xoId].x && room.xo[xoId].o),
+                  onMove: (index) => room.moveXo(xoId, index),
+                  onReset: () => room.resetXo(xoId),
+                }
+              : undefined
+          }
+        />
+      ) : null}
+      {computer.open ? (
+        <ComputerDesktop
+          officeId="hq"
+          boards={OFFICE_BOARDS.map((item) => ({ id: item.id, title: item.title }))}
+          people={people}
+          onLeave={computer.dismiss}
+          onStand={() => {
+            computer.dismiss()
+            queueSit()
+          }}
+        />
+      ) : null}
+    </div>
+  )
+}

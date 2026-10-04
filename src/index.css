@@ -1,0 +1,97 @@
+@import "tailwindcss";
+
+/*
+  CorpLift visual identity 2026.
+  One typeface for Arabic, Latin and numerals: Thmanyah Sans.
+  Its licence does not allow redistributing the font files, so they are not in
+  the repo. Download them from font.thmanyah.com and put the four .woff2 files
+  in public/fonts/ (see public/fonts/README.md). Until then the system font shows.
+*/
+@font-face {
+  font-family: "Thmanyah Sans";
+  src: local("thmanyahsans-Regular"), url("/fonts/thmanyahsans-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Thmanyah Sans";
+  src: local("thmanyahsans-Medium"), url("/fonts/thmanyahsans-Medium.woff2") format("woff2");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Thmanyah Sans";
+  src: local("thmanyahsans-Bold"), url("/fonts/thmanyahsans-Bold.woff2") format("woff2");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Thmanyah Sans";
+  src: local("thmanyahsans-Black"), url("/fonts/thmanyahsans-Black.woff2") format("woff2");
+  font-weight: 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@theme {
+  /* Type: 900 headings, 700 card titles and buttons, 500 labels, 400 text. No Light. */
+  --font-sans: "Thmanyah Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+
+  /* The three primaries carry equal weight. */
+  --color-ink: #000000;
+  --color-paper: #ffffff;
+  --color-lift: #2765ed;
+
+  /* Blue ramp */
+  --color-lift-start: #3b82f6; /* gradient start */
+  --color-lift-end: #1447e5; /* gradient end */
+  --color-sky: #8fb8ff; /* accent on black */
+  --color-frost: #e6eeff; /* text on blue, light tint */
+  --color-mist: #f3f6fc; /* light surface */
+
+  /* Greys */
+  --color-night: #0b0b0e; /* dark card */
+  --color-coal: #14161c; /* dark card gradient start */
+  --color-slate: #5c5c5c; /* text on light */
+  --color-fog: #8a8d98; /* muted text */
+  --color-silver: #c4c6ce; /* text on black */
+  --color-line: #e6e8ee; /* dividers */
+
+  /* Not a brand colour. Only for error messages and destructive actions;
+     it is the red the identity guide uses for its own "forbidden" marks. */
+  --color-danger: #c0392b;
+
+  /* Every piece of content sits in a 28px card. */
+  --radius-card: 28px;
+
+  /* White cards carry a light blue shadow; blue cards a blue glow. */
+  --shadow-card: 0 18px 50px -24px rgb(20 71 229 / 0.45);
+  --shadow-pop: 0 12px 30px -18px rgb(20 71 229 / 0.55);
+  --shadow-glow: 0 18px 40px -16px rgb(39 101 237 / 0.38);
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  /* The white surface: white with a blue halo. */
+  background:
+    radial-gradient(70% 55% at 0% 100%, rgb(39 101 237 / 0.16), transparent 70%),
+    var(--color-paper);
+  background-attachment: fixed;
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  overflow-x: hidden;
+}
+
+::selection {
+  background: var(--color-lift);
+  color: var(--color-paper);
+}
