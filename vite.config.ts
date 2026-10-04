@@ -9,7 +9,7 @@ const root = fileURLToPath(new URL('.', import.meta.url))
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   resolve: {
-    alias: { '@corprealm/xo': path.join(root, 'backend/packages/domain/src/xo.ts') },
+    alias: { '@corprealm/xo': path.join(root, 'src/xo/rules.ts') },
   },
   server: {
     proxy: { '/api': { target: 'http://localhost:3000', changeOrigin: true } },

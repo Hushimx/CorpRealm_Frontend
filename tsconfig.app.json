@@ -21,7 +21,7 @@
     "noUnusedParameters": true,
     "erasableSyntaxOnly": true,
     "noFallthroughCasesInSwitch": true,
-    "paths": { "@corprealm/xo": ["./backend/packages/domain/src/xo.ts"] }
+    "paths": { "@corprealm/xo": ["./src/xo/rules.ts"] }
   },
   "include": ["src"]
 }
