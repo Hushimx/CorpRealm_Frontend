@@ -24,7 +24,7 @@ jobs:
           printf '%s\n' "$SSH_KEY" > ~/.ssh/id
           chmod 600 ~/.ssh/id
           ssh="ssh -i $HOME/.ssh/id -o StrictHostKeyChecking=accept-new -o ServerAliveInterval=30"
-          $ssh root@92.42.47.200 'mkdir -p /opt/corprealm/frontend'
+          $ssh root@92.42.47.200 'if ! command -v rsync >/dev/null; then export DEBIAN_FRONTEND=noninteractive; apt-get update -qq && apt-get install -y -qq rsync; fi; mkdir -p /opt/corprealm/frontend'
           rsync -az --delete \
             --exclude .git \
             --exclude node_modules \
