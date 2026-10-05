@@ -1,4 +1,5 @@
 import { Room, RoomEvent, Track, type RemoteAudioTrack } from 'livekit-client'
+import { playLevel, usePlaySettings } from '../store/play'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 type Heard = { userId: string; x: number; z: number }
@@ -168,7 +169,7 @@ export function useOfficeMedia(ticket: LiveTicket | null, active: boolean, ear: 
       const names: string[] = []
       room.remoteParticipants.forEach((participant) => {
         const distance = distanceTo(participant.identity)
-        const volume = deafRef.current ? 0 : voiceVolume(distance)
+        const volume = deafRef.current ? 0 : voiceVolume(distance) * playLevel()
         let speaking = false
         participant.audioTrackPublications.forEach((publication) => {
           if (publication.source !== Track.Source.Microphone && publication.source !== Track.Source.ScreenShareAudio) return
@@ -249,6 +250,9 @@ export function useOfficeMedia(ticket: LiveTicket | null, active: boolean, ear: 
         return
       }
       await room.startAudio().catch(() => undefined)
+      const saved = usePlaySettings.getState()
+      if (saved.micId) await room.switchActiveDevice('audioinput', saved.micId).catch(() => undefined)
+      if (saved.headId) await room.switchActiveDevice('audiooutput', saved.headId).catch(() => undefined)
       setHearing(room.canPlaybackAudio)
       setReady(true)
       setError('')

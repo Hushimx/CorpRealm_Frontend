@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { NavLink, Outlet } from 'react-router'
+import { NavLink, Outlet, useLocation } from 'react-router'
 import { SKINS, type SkinId } from '../avatar/parts'
 import { useLink } from '../net/link'
 import { useSession } from '../net/session'
@@ -54,10 +54,11 @@ export function Shell() {
   }, [setFace, setName, setOutfit, setPants, user?.id])
 
   const home = !user ? '/login' : user.avatarReady ? '/office' : '/avatar'
+  const office = useLocation().pathname === '/office'
 
   return (
     <div className="min-h-svh text-ink">
-      <header className="flex items-center justify-between gap-2 px-4 py-4 sm:px-5 md:px-8">
+      {office ? null : <header className="flex items-center justify-between gap-2 px-4 py-4 sm:px-5 md:px-8">
         <NavLink to={home} className="flex shrink-0 items-center gap-2.5 text-ink" aria-label="CORP Realm home">
           <BrandMark className="h-7 w-auto" />
           <span className="text-xl leading-none font-black">CORP Realm</span>
@@ -94,7 +95,7 @@ export function Shell() {
             </button>
           ) : null}
         </nav>
-      </header>
+      </header>}
       <Outlet />
       {offline ? <ConnectionPage /> : null}
     </div>

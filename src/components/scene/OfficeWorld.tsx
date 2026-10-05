@@ -3,7 +3,7 @@ import { OFFICE_AVATAR_SCALE } from '../../office/scale'
 import { OrbitControls } from '@react-three/drei'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { Suspense, useEffect, useLayoutEffect, useRef, useState } from 'react'
-import { PCFShadowMap, type Group, type PerspectiveCamera } from 'three'
+import { PCFShadowMap, PerspectiveCamera, type Group } from 'three'
 import type { AvatarParts } from '../../avatar/parts'
 import { clearHeld, holdKey, isHeld, queueJump, takeJump, takeSit } from '../../office/input'
 import { boardInReach } from '../../office/boards'
@@ -15,6 +15,7 @@ import { ScreenFeeds } from './feeds'
 import { RemotePeople, type RemoteBody } from './RemotePeople'
 import type { SharedPicture } from '../../net/media'
 import { OfficeShell } from './OfficeSet'
+import { usePlaySettings } from '../../store/play'
 
 const SPAWN = { x: plan(-4.2), z: plan(5.4) }
 
@@ -105,7 +106,12 @@ export function OfficeStage({
         <OfficeShell overview={overview} />
         <Staff />
         <RemotePeople people={others} cameras={cameras} />
-        {overview ? <OrbitControls makeDefault target={[0, 0, -6.25]} minDistance={18} maxDistance={75} maxPolarAngle={Math.PI / 2.15} /> : <Player parts={parts} onPresence={onPresence} paused={paused} place={place} onPlace={onPlace} onMotion={onMotion} others={others} />}
+        {overview ? <OrbitControls makeDefault target={[0, 0, -6.25]} minDistance={18} maxDistance={75} maxPolarAngle={Math.PI / 2.15} /> : (
+          <>
+            <ViewFov />
+            <Player parts={parts} onPresence={onPresence} paused={paused} place={place} onPlace={onPlace} onMotion={onMotion} others={others} />
+          </>
+        )}
         </ScreenFeeds.Provider>
       </Suspense>
     </Canvas>
@@ -182,8 +188,9 @@ function Player({
     let lastX = 0
     let lastY = 0
     const look = (dx: number, dy: number) => {
-      yaw.current -= dx * 0.0022
-      pitch.current = clamp(pitch.current + dy * 0.0016, -0.55, 0.85)
+      const sensitivity = usePlaySettings.getState().sensitivity
+      yaw.current -= dx * 0.0022 * sensitivity
+      pitch.current = clamp(pitch.current + dy * 0.0016 * sensitivity, -0.55, 0.85)
     }
     const onMouseMove = (event: MouseEvent) => {
       if (document.pointerLockElement !== element) return
@@ -438,6 +445,17 @@ const CONTROL_CODES: Record<string, string> = {
   KeyD: 'd',
   ShiftLeft: 'shift',
   ShiftRight: 'shift',
+}
+
+function ViewFov() {
+  const fov = usePlaySettings((state) => state.fov)
+  const camera = useThree((state) => state.camera)
+  useLayoutEffect(() => {
+    if (!(camera instanceof PerspectiveCamera)) return
+    camera.fov = fov
+    camera.updateProjectionMatrix()
+  }, [camera, fov])
+  return null
 }
 
 function lockLook(element: HTMLElement) {

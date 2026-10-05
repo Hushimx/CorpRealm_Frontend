@@ -1,8 +1,7 @@
 import { doorId, doorInReach, toggleDoor, useDoors } from '../office/doors'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Link } from 'react-router'
-import { AccountCard } from '../components/AccountCard'
 import { KeyCap } from '../components/KeyCap'
+import { OfficePause } from '../components/OfficePause'
 import { OfficeStage, type Presence } from '../components/scene/OfficeWorld'
 import { ChessGame, chessInReach } from '../chess'
 import { XoGame } from '../xo'
@@ -11,10 +10,9 @@ import { TaskBoard } from '../components/TaskBoard'
 import { boardInReach, OFFICE_BOARDS } from '../office/boards'
 import { clearHeld, holdKey, queueJump, queueSit } from '../office/input'
 import { doors, props, rooms } from '../office/layout'
-import { MediaBar } from '../components/MediaBar'
 import { OfficeRoll, VoiceBar, VoiceRoster, floorMates, useOfficeListOpen } from '../components/VoiceOverlay'
 import { useOfficeMedia } from '../net/media'
-import { presenceLine, useOfficeRoom } from '../net/room'
+import { useOfficeRoom } from '../net/room'
 import type { Motion } from '../components/scene/OfficeWorld'
 import { useOfficePeople } from '../net/people'
 import { useSession } from '../net/session'
@@ -51,6 +49,7 @@ export function OfficePage() {
   const [looking, setLooking] = useState(false)
   const listOpen = useOfficeListOpen()
   const [overview, setOverview] = useState(true)
+  const [menuOpen, setMenuOpen] = useState(false)
   const [openBoard, setOpenBoard] = useState<string | null>(null)
   const [chessOpen, setChessOpen] = useState(false)
   const [chessId, setChessId] = useState<string | null>(null)
@@ -70,13 +69,6 @@ export function OfficePage() {
     ear,
     room.others.map((person) => ({ userId: person.userId, x: person.x, z: person.z })),
   )
-  const company = presenceLine({
-    signedIn: Boolean(user),
-    active: !overview,
-    connected: room.connected,
-    notice: room.notice,
-    names: room.others.map((person) => person.name.trim() || 'Guest'),
-  })
   const computer = useDeskSession(!overview && presence.sitting, presence.atDesk)
   const busy = overview || openBoard || computer.open || chessOpen || xoOpen
   const doorStates = useDoors(state => state.open)
@@ -181,41 +173,31 @@ export function OfficePage() {
     return () => window.removeEventListener('keydown', onKey)
   }, [chessOpen, computer.open, nearDoor, near, nearChess, nearXo, openBoard, overview, presence.nearSeat, presence.sitting, xoOpen])
 
-  return (
-    <div className={`relative h-[calc(100svh-4.25rem)] bg-night ${looking ? 'cursor-none' : ''}`}>
-      <OfficeStage parts={{ face, outfit, pants }} others={room.others} onPresence={setPresence} onPlace={room.standAt} onMotion={follow} place={room.place} screens={media.screens} cameras={media.cameras} overview={overview} paused={board !== null || computer.open || chessOpen || xoOpen} />
-      <div className="pointer-events-none absolute inset-0">
-        <div className="absolute inset-x-3 top-3 flex flex-col items-start gap-3 sm:inset-x-4 sm:top-4 sm:flex-row sm:justify-between">
-        <aside className="pointer-events-auto max-w-[16rem] rounded-card bg-paper px-4 py-3 text-ink shadow-card">
-          <img src="/branding/corplift-logo.svg" alt="CorpLift" className="mb-3 h-6 w-auto" />
-          <p className="text-xs font-bold tracking-[0.16em] text-ink/60 uppercase">CorpLift HQ</p>
-          <h1 className="mt-1 font-bold text-3xl leading-none">{overview ? 'The studio' : presence.room}</h1>
-          <p className="mt-1 text-sm text-ink/75">{overview ? 'A little space for big ideas.' : `${name.trim() || 'Unnamed'} is on the floor`}</p>
-          <p className="mt-1 text-xs text-ink/70">{company}</p>
-          <AccountCard />
-          {!overview && room.livekit ? <MediaBar media={media} /> : null}
-          {!overview && room.connected && !room.livekit ? <p className="mt-2 text-xs text-ink/60">Voice server is not running.</p> : null}
-          <p className="mt-2 text-xs leading-relaxed text-ink/60">
-            {overview ? 'Drag to orbit · Scroll to zoom. Step inside, then press E at a chair, a board, or a game table.' : 'W A S D to move. Shift to sprint. Space to jump. E sits on a chair. A desk opens the computer, a board opens tasks, and chess or XO tables open a game. Hold Tab for this visit and everyone inside. Esc releases the cursor.'}
-          </p>
-          <button type="button" onClick={() => { setOverview(!overview); if (document.pointerLockElement) document.exitPointerLock() }} className="mt-3 mr-3 rounded-full bg-ink px-4 py-2 text-xs font-bold text-paper">
-            {overview ? 'Walk inside ↗' : 'Office overview ↗'}
-          </button>
-          <Link
-            to="/avatar"
-            className="mt-3 inline-block text-sm font-medium text-lift underline decoration-lift/40 underline-offset-2"
-          >
-            Change avatar
-          </Link>
-          <Link
-            to="/build"
-            className="mt-2 block text-sm font-medium text-lift underline decoration-lift/40 underline-offset-2"
-          >
-            Build an office
-          </Link>
-        </aside>
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (event.code !== 'Escape' || event.repeat) return
+      const target = event.target
+      if (target instanceof HTMLInputElement && target.type !== 'range') return
+      if (target instanceof HTMLElement && target.closest('textarea, select, [contenteditable=true]')) return
+      if (openBoard || computer.open || chessOpen || xoOpen) return
+      setMenuOpen((open) => !open)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [chessOpen, computer.open, openBoard, xoOpen])
 
-        <div className="flex flex-col items-end gap-3">
+  function resume() {
+    setMenuOpen(false)
+    if (overview) return
+    const canvas = document.querySelector('canvas')
+    if (canvas instanceof HTMLCanvasElement) void canvas.requestPointerLock()
+  }
+
+  return (
+    <div className={`relative h-svh bg-night ${looking && !menuOpen ? 'cursor-none' : ''}`}>
+      <OfficeStage parts={{ face, outfit, pants }} others={room.others} onPresence={setPresence} onPlace={room.standAt} onMotion={follow} place={room.place} screens={media.screens} cameras={media.cameras} overview={overview} paused={menuOpen || board !== null || computer.open || chessOpen || xoOpen} />
+      <div className="pointer-events-none absolute inset-0">
+        <div className="absolute top-3 right-3 flex flex-col items-end gap-3 sm:top-4 sm:right-4">
           {!overview && room.livekit ? <VoiceRoster media={media} faces={{ ...(user ? { [user.id]: face } : {}), ...Object.fromEntries(room.others.map((person) => [person.userId, person.face])) }} /> : null}
         <aside className="pointer-events-auto rounded-card bg-paper p-2 text-ink shadow-card">
           <svg viewBox="-19 -25 38 38" className="h-36 w-48 sm:h-40 sm:w-56" role="img" aria-label="Office map">
@@ -246,7 +228,6 @@ export function OfficePage() {
           </svg>
         </aside>
         </div>
-        </div>
 
         <OfficeRoll
           active={!overview && room.connected}
@@ -255,7 +236,17 @@ export function OfficePage() {
           voices={media.voices}
         />
 
-        {looking || overview || listOpen ? null : (
+        {overview && !menuOpen ? (
+          <button
+            type="button"
+            onClick={() => setOverview(false)}
+            className="pointer-events-auto absolute bottom-20 left-1/2 -translate-x-1/2 rounded-full bg-ink px-4 py-2 text-sm font-bold text-paper shadow-pop sm:bottom-24"
+          >
+            Walk inside
+          </button>
+        ) : null}
+
+        {looking || overview || listOpen || menuOpen ? null : (
           <div className="absolute inset-0 flex items-center justify-center px-4">
             <p className="flex max-w-xl flex-wrap items-center justify-center gap-1.5 rounded-full bg-paper px-4 py-2 text-sm font-medium text-ink shadow-pop">
               <KeyCap name="click" alt="Click" className="h-8 w-auto" />
@@ -400,6 +391,22 @@ export function OfficePage() {
                 }
               : undefined
           }
+        />
+      ) : null}
+      {menuOpen ? (
+        <OfficePause
+          overview={overview}
+          media={media}
+          onResume={resume}
+          onWalkInside={() => {
+            setMenuOpen(false)
+            setOverview(false)
+          }}
+          onOverview={() => {
+            setMenuOpen(false)
+            setOverview(true)
+            if (document.pointerLockElement) document.exitPointerLock()
+          }}
         />
       ) : null}
       {computer.open ? (
