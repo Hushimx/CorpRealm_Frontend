@@ -2,15 +2,20 @@ import { useEffect, useState } from 'react'
 import { seedBoard, useTaskStore } from '../store/tasks'
 import { ChatDesk } from './ChatDesk'
 import { FilesDesk } from './FilesDesk'
+import { ProjectsDesk } from './ProjectsDesk'
+import { ReportsDesk } from './ReportsDesk'
 import { StatsDesk } from './StatsDesk'
+import { ApiError, api } from '../net/api'
 import { TaskBoard, type Assignable } from './TaskBoard'
 
-export type DeskBoard = { id: string; title: string }
+export type DeskBoard = { id: string; title: string; projectId?: string | null; projectName?: string }
 
 const PROGRAMS = [
   { id: 'tasks', label: 'Tasks' },
   { id: 'chat', label: 'Chat' },
   { id: 'files', label: 'Files' },
+  { id: 'reports', label: 'Reports' },
+  { id: 'projects', label: 'Projects' },
   { id: 'stats', label: 'Stats' },
 ] as const
 
@@ -53,7 +58,15 @@ export function ComputerDesktop({
 }) {
   const [app, setApp] = useState<ProgramId | null>(null)
   const [boardId, setBoardId] = useState<string | null>(null)
+  const [custom, setCustom] = useState<DeskBoard[]>([])
+  const [drafting, setDrafting] = useState(false)
+  const [boardName, setBoardName] = useState('')
+  const [boardProject, setBoardProject] = useState('')
+  const [projectChoices, setProjectChoices] = useState<{ id: string; name: string }[]>([])
+  const [boardError, setBoardError] = useState('')
   const [now, setNow] = useState(() => new Date())
+  const floorKey = boards.map((board) => board.id).join('\n')
+  const catalog = [...boards, ...custom.filter((board) => !boards.some((floor) => floor.id === board.id))]
 
   useEffect(() => {
     const timer = window.setInterval(() => setNow(new Date()), 1000)
@@ -61,10 +74,23 @@ export function ComputerDesktop({
   }, [])
 
   useEffect(() => {
+    let closed = false
+    const floor = new Set(floorKey.split('\n').filter(Boolean))
+    void api<{ boards: DeskBoard[] }>(`/offices/${officeId}/boards`)
+      .then((next) => {
+        if (!closed) setCustom(next.boards.filter((board) => !floor.has(board.id)))
+      })
+      .catch(() => undefined)
+    return () => {
+      closed = true
+    }
+  }, [officeId, floorKey])
+
+  useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       if (event.key !== 'Escape') return
       const target = event.target
-      if (target instanceof HTMLElement && target.closest('input, textarea')) return
+      if (target instanceof HTMLElement && target.closest('input, textarea, select')) return
       if (boardId) return
       event.preventDefault()
       if (app) {
@@ -77,7 +103,30 @@ export function ComputerDesktop({
     return () => window.removeEventListener('keydown', onKey)
   }, [app, boardId, onLeave])
 
-  const openBoard = boards.find((board) => board.id === boardId) ?? null
+  const openBoard = catalog.find((board) => board.id === boardId) ?? null
+
+  function openDeskBoard(board: DeskBoard) {
+    setCustom((current) => (current.some((item) => item.id === board.id) || boards.some((item) => item.id === board.id) ? current : [...current, board]))
+    setBoardId(board.id)
+    setApp('tasks')
+  }
+
+  async function createBoard() {
+    try {
+      const created = await api<DeskBoard>(`/offices/${officeId}/boards`, {
+        method: 'POST',
+        body: JSON.stringify({ title: boardName, projectId: boardProject || undefined }),
+      })
+      setCustom((current) => [created, ...current.filter((item) => item.id !== created.id)])
+      setBoardName('')
+      setBoardProject('')
+      setDrafting(false)
+      setBoardError('')
+      setBoardId(created.id)
+    } catch (reason) {
+      setBoardError(reason instanceof ApiError ? reason.message : 'The board could not be created.')
+    }
+  }
   const clock = now.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
 
   return (
@@ -131,17 +180,66 @@ export function ComputerDesktop({
               <div>
                 <p className="text-xs font-bold tracking-[0.16em] text-ink/60 uppercase">Tasks</p>
                 <h2 className="font-bold text-3xl leading-none">All boards</h2>
-                <p className="mt-1 text-xs text-ink/60">Every kanban on this floor. Open one to move cards.</p>
+                <p className="mt-1 text-xs text-ink/60">Floor boards, plus any board you create. A new board can belong to a project.</p>
               </div>
-              <button type="button" onClick={() => setApp(null)} className="shrink-0 rounded-full bg-ink px-3 py-1.5 text-xs font-bold text-paper">
-                Close
-              </button>
+              <div className="flex shrink-0 gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDrafting((value) => !value)
+                    setBoardError('')
+                    if (projectChoices.length === 0) {
+                      void api<{ projects: { id: string; name: string }[] }>(`/offices/${officeId}/projects`)
+                        .then((next) => setProjectChoices(next.projects))
+                        .catch(() => undefined)
+                    }
+                  }}
+                  className="rounded-full bg-ink px-3 py-1.5 text-xs font-bold text-paper"
+                >
+                  New board
+                </button>
+                <button type="button" onClick={() => setApp(null)} className="rounded-full bg-frost px-3 py-1.5 text-xs font-bold text-ink">
+                  Close
+                </button>
+              </div>
             </div>
             <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-3">
-              {boards.length === 0 ? (
+              {drafting ? (
+                <form
+                  className="space-y-3 rounded-card bg-mist p-3 text-ink"
+                  onSubmit={(event) => {
+                    event.preventDefault()
+                    void createBoard()
+                  }}
+                >
+                  <label className="block text-xs font-bold tracking-[0.14em] text-ink/50 uppercase">
+                    Name
+                    <input value={boardName} onChange={(event) => setBoardName(event.target.value)} placeholder="Launch checklist" className="mt-1 w-full rounded-2xl border border-ink/15 bg-paper px-3 py-2 text-sm font-medium text-ink outline-none placeholder:text-ink/40 focus-visible:border-lift" />
+                  </label>
+                  <label className="block text-xs font-bold tracking-[0.14em] text-ink/50 uppercase">
+                    Project
+                    <select value={boardProject} onChange={(event) => setBoardProject(event.target.value)} className="mt-1 w-full rounded-2xl border border-ink/15 bg-paper px-3 py-2 text-sm font-medium text-ink outline-none">
+                      <option value="">No project</option>
+                      {projectChoices.map((project) => (
+                        <option key={project.id} value={project.id}>{project.name}</option>
+                      ))}
+                    </select>
+                  </label>
+                  {boardError ? <p className="text-sm font-medium text-danger">{boardError}</p> : null}
+                  <div className="flex gap-2">
+                    <button type="submit" disabled={!boardName.trim()} className="rounded-full bg-ink px-3 py-1.5 text-xs font-bold text-paper disabled:opacity-60">
+                      Create
+                    </button>
+                    <button type="button" onClick={() => setDrafting(false)} className="rounded-full bg-paper px-3 py-1.5 text-xs font-bold text-ink">
+                      Cancel
+                    </button>
+                  </div>
+                </form>
+              ) : null}
+              {catalog.length === 0 ? (
                 <p className="rounded-card border border-line bg-mist px-4 py-6 text-sm text-ink">No boards on this floor yet.</p>
               ) : (
-                boards.map((board) => <BoardGlance key={board.id} board={board} onOpen={() => setBoardId(board.id)} />)
+                catalog.map((board) => <BoardGlance key={board.id} board={board} onOpen={() => setBoardId(board.id)} />)
               )}
             </div>
           </section>
@@ -157,6 +255,8 @@ export function ComputerDesktop({
 
         {app === 'chat' ? <ChatDesk officeId={officeId} people={people} onClose={() => setApp(null)} /> : null}
         {app === 'files' ? <FilesDesk officeId={officeId} onClose={() => setApp(null)} /> : null}
+        {app === 'reports' ? <ReportsDesk officeId={officeId} people={people} onClose={() => setApp(null)} /> : null}
+        {app === 'projects' ? <ProjectsDesk officeId={officeId} onClose={() => setApp(null)} onOpenBoard={openDeskBoard} /> : null}
         {app === 'stats' ? <StatsDesk officeId={officeId} onClose={() => setApp(null)} /> : null}
       </div>
     </div>
@@ -189,6 +289,8 @@ function ProgramMark({ id }: { id: ProgramId }) {
   if (id === 'stats') return <StatsMark />
   if (id === 'chat') return <ChatMark />
   if (id === 'files') return <FilesMark />
+  if (id === 'reports') return <ReportsMark />
+  if (id === 'projects') return <ProjectsMark />
   return <TasksMark />
 }
 
@@ -206,6 +308,28 @@ function FilesMark() {
     <span className="relative h-9 w-8" aria-hidden="true">
       <span className="absolute top-1 left-0 h-2.5 w-4 rounded-t-md bg-lift" />
       <span className="absolute top-3 left-0 h-5 w-8 rounded-md rounded-tl-none bg-ink" />
+    </span>
+  )
+}
+
+function ReportsMark() {
+  return (
+    <span className="relative h-9 w-7" aria-hidden="true">
+      <span className="absolute inset-0 rounded-md border-2 border-ink bg-paper" />
+      <span className="absolute top-2.5 right-1.5 left-1.5 h-0.5 rounded-full bg-lift" />
+      <span className="absolute top-4 right-2 left-1.5 h-0.5 rounded-full bg-ink" />
+      <span className="absolute top-[1.35rem] right-2.5 left-1.5 h-0.5 rounded-full bg-ink/40" />
+    </span>
+  )
+}
+
+function ProjectsMark() {
+  return (
+    <span className="grid h-8 w-8 grid-cols-2 gap-1" aria-hidden="true">
+      <span className="rounded-sm bg-ink" />
+      <span className="rounded-sm bg-lift" />
+      <span className="rounded-sm bg-lift" />
+      <span className="rounded-sm bg-ink" />
     </span>
   )
 }
@@ -242,7 +366,10 @@ function BoardGlance({ board, onOpen }: { board: DeskBoard; onOpen: () => void }
   return (
     <article className="rounded-card border border-line bg-mist p-3 text-ink">
       <div className="flex items-center justify-between gap-3">
-        <h3 className="min-w-0 truncate font-bold text-2xl leading-none">{board.title}</h3>
+        <div className="min-w-0">
+          <h3 className="truncate font-bold text-2xl leading-none">{board.title}</h3>
+          {board.projectName ? <p className="mt-1 truncate text-xs font-medium text-ink/60">{board.projectName}</p> : null}
+        </div>
         <button type="button" onClick={onOpen} className="shrink-0 rounded-full bg-ink px-3 py-1.5 text-xs font-bold text-paper">
           Open
         </button>
