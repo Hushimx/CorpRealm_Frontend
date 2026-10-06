@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { noteCopy, useT } from '../i18n'
 import { AuthScreen } from './AuthScreen'
 import { api, isUnreachable } from '../net/api'
 import { useLink } from '../net/link'
@@ -42,26 +43,27 @@ export function ConnectionPage() {
     useLink.getState().endRetry('')
   }
 
-  const title = replaced ? 'Signed in elsewhere' : apiDown ? 'Server is down' : 'You were disconnected'
+  const t = useT()
+  const title = replaced ? t('signedElsewhere') : apiDown ? t('serverDown') : t('disconnectedTitle')
   const lede = replaced
-    ? 'This account is open in another window. Reconnect to use it here.'
+    ? t('elsewhereLede')
     : apiDown
-      ? 'The office server stopped responding. Your place is still saved. Reconnect to continue.'
-      : 'The live office dropped the connection. Reconnect to step back inside.'
+      ? t('serverLede')
+      : t('dropLede')
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-paper text-ink">
-      <AuthScreen eyebrow="Connection" title={title} lede={lede}>
-        <p className="text-sm font-bold text-danger">Disconnected</p>
+      <AuthScreen eyebrow={t('connection')} title={title} lede={lede}>
+        <p className="text-sm font-bold text-danger">{t('disconnected')}</p>
         <button
           type="button"
           onClick={() => void reconnect()}
           disabled={retrying}
           className="mt-4 w-full rounded-full bg-ink px-4 py-2.5 text-sm font-medium text-paper focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lift disabled:opacity-60"
         >
-          {retrying ? 'Reconnecting…' : 'Reconnect'}
+          {retrying ? t('reconnecting') : t('reconnect')}
         </button>
-        {note ? <p className="mt-3 text-sm font-medium text-danger">{note}</p> : null}
+        {note ? <p className="mt-3 text-sm font-medium text-danger">{noteCopy(note, t)}</p> : null}
       </AuthScreen>
     </div>
   )

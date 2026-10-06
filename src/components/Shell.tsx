@@ -4,6 +4,7 @@ import { SKINS, type SkinId } from '../avatar/parts'
 import { useLink } from '../net/link'
 import { useSession } from '../net/session'
 import { useAvatarStore } from '../store/avatar'
+import { useT } from '../i18n'
 import { BrandMark } from './BrandMark'
 import { ConnectionPage } from './ConnectionPage'
 
@@ -53,50 +54,56 @@ export function Shell() {
     if ((SKINS as readonly string[]).includes(user.pants)) setPants(user.pants as SkinId)
   }, [setFace, setName, setOutfit, setPants, user?.id])
 
+  const t = useT()
   const home = !user ? '/login' : user.avatarReady ? '/office' : '/avatar'
   const office = useLocation().pathname === '/office'
 
   return (
-    <div className="min-h-svh text-ink">
+    <div className="flex min-h-svh flex-col text-ink">
       {office ? null : <header className="flex items-center justify-between gap-2 px-4 py-4 sm:px-5 md:px-8">
-        <NavLink to={home} className="flex shrink-0 items-center gap-2.5 text-ink" aria-label="CORP Realm home">
+        <NavLink to={home} className="flex shrink-0 items-center gap-2.5 text-ink" aria-label={t('home')}>
           <BrandMark className="h-7 w-auto" />
           <span className="text-xl leading-none font-black">CORP Realm</span>
         </NavLink>
-        <nav className="flex min-w-0 items-center overflow-x-auto" aria-label="Primary">
+        <nav className="flex min-w-0 items-center overflow-x-auto" aria-label={t('primary')}>
           {ready && !user ? (
             <>
               <NavLink to="/login" className={navClass}>
-                Sign in
+                {t('signIn')}
               </NavLink>
               <NavLink to="/register" className={navClass}>
-                Register
+                {t('register')}
               </NavLink>
             </>
           ) : null}
           {user ? (
             <NavLink to="/avatar" className={navClass}>
-              Avatar
+              {t('avatar')}
             </NavLink>
           ) : null}
           {user?.avatarReady ? (
             <>
               <NavLink to="/office" className={navClass}>
-                Office
+                {t('office')}
+              </NavLink>
+              <NavLink to="/desktop" className={navClass}>
+                {t('desktop')}
               </NavLink>
               <NavLink to="/build" className={navClass}>
-                Builder
+                {t('builder')}
               </NavLink>
             </>
           ) : null}
           {user ? (
             <button type="button" onClick={() => void logout()} className="rounded-full px-2.5 py-1.5 text-sm font-medium text-ink hover:bg-frost sm:px-3">
-              Log out
+              {t('logOut')}
             </button>
           ) : null}
         </nav>
       </header>}
+      <div className={office ? 'relative min-h-svh' : 'relative min-h-0 flex-1'}>
       <Outlet />
+      </div>
       {offline ? <ConnectionPage /> : null}
     </div>
   )

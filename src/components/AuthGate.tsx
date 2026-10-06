@@ -1,11 +1,13 @@
 import type { ReactNode } from 'react'
 import { Navigate } from 'react-router'
+import { useT } from '../i18n'
 import { useSession } from '../net/session'
 
 function Waiting() {
+  const t = useT()
   return (
     <main className="px-5 py-16 text-ink md:px-8">
-      <p className="text-sm text-ink/70">Checking your session…</p>
+      <p className="text-sm text-ink/70">{t('checking')}</p>
     </main>
   )
 }

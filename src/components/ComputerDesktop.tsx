@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router'
+import { LanguageSwitch, knownCopy, useLocale, useT } from '../i18n'
 import { seedBoard, useTaskStore } from '../store/tasks'
 import { ChatDesk } from './ChatDesk'
 import { FilesDesk } from './FilesDesk'
@@ -11,12 +13,12 @@ import { TaskBoard, type Assignable } from './TaskBoard'
 export type DeskBoard = { id: string; title: string; projectId?: string | null; projectName?: string }
 
 const PROGRAMS = [
-  { id: 'tasks', label: 'Tasks' },
-  { id: 'chat', label: 'Chat' },
-  { id: 'files', label: 'Files' },
-  { id: 'reports', label: 'Reports' },
-  { id: 'projects', label: 'Projects' },
-  { id: 'stats', label: 'Stats' },
+  { id: 'tasks', label: 'tasks' },
+  { id: 'chat', label: 'chat' },
+  { id: 'files', label: 'files' },
+  { id: 'reports', label: 'reports' },
+  { id: 'projects', label: 'projects' },
+  { id: 'stats', label: 'stats' },
 ] as const
 
 type ProgramId = (typeof PROGRAMS)[number]['id']
@@ -49,12 +51,14 @@ export function ComputerDesktop({
   people,
   onStand,
   onLeave,
+  page = false,
 }: {
   officeId: string
   boards: DeskBoard[]
   people: Assignable[]
-  onStand: () => void
-  onLeave: () => void
+  onStand?: () => void
+  onLeave?: () => void
+  page?: boolean
 }) {
   const [app, setApp] = useState<ProgramId | null>(null)
   const [boardId, setBoardId] = useState<string | null>(null)
@@ -67,6 +71,8 @@ export function ComputerDesktop({
   const [now, setNow] = useState(() => new Date())
   const floorKey = boards.map((board) => board.id).join('\n')
   const catalog = [...boards, ...custom.filter((board) => !boards.some((floor) => floor.id === board.id))]
+  const t = useT()
+  const locale = useLocale()
 
   useEffect(() => {
     const timer = window.setInterval(() => setNow(new Date()), 1000)
@@ -97,7 +103,7 @@ export function ComputerDesktop({
         setApp(null)
         return
       }
-      onLeave()
+      onLeave?.()
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
@@ -124,29 +130,38 @@ export function ComputerDesktop({
       setBoardError('')
       setBoardId(created.id)
     } catch (reason) {
-      setBoardError(reason instanceof ApiError ? reason.message : 'The board could not be created.')
+      setBoardError(reason instanceof ApiError ? reason.message : t('boardFailed'))
     }
   }
-  const clock = now.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
+  const clock = now.toLocaleTimeString(locale, { hour: 'numeric', minute: '2-digit' })
 
   return (
     <div className="absolute inset-0 z-30 flex bg-ink p-2 text-ink sm:p-3">
       <div className="relative min-h-0 min-w-0 flex-1 overflow-hidden rounded-[1.35rem] shadow-[inset_0_0_0_1px_rgba(0,0,0,0.08)]">
         <Wallpaper />
-        <header className="absolute inset-x-0 top-0 z-20 flex items-center justify-between gap-3 bg-paper/90 px-4 py-2.5 text-ink backdrop-blur-md">
+        <header className="absolute inset-x-0 top-0 z-20 flex flex-wrap items-center justify-between gap-3 bg-paper/90 px-4 py-2.5 text-ink backdrop-blur-md">
           <p className="text-xs font-bold tracking-[0.16em] text-ink/70 uppercase">CORP Realm</p>
           <p className="text-sm font-medium text-ink tabular-nums">{clock}</p>
           <div className="flex items-center gap-2">
-            <button type="button" onClick={onLeave} className="rounded-full bg-frost px-3 py-1.5 text-xs font-bold text-ink">
-              Leave screen
-            </button>
-            <button type="button" onClick={onStand} className="rounded-full bg-ink px-3 py-1.5 text-xs font-bold text-paper">
-              Stand up
-            </button>
+            <LanguageSwitch />
+            {page ? (
+              <Link to="/office" className="rounded-full bg-ink px-3 py-1.5 text-xs font-bold text-paper">
+                {t('openOffice')}
+              </Link>
+            ) : (
+              <>
+                <button type="button" onClick={onLeave} className="rounded-full bg-frost px-3 py-1.5 text-xs font-bold text-ink">
+                  {t('leaveScreen')}
+                </button>
+                <button type="button" onClick={onStand} className="rounded-full bg-ink px-3 py-1.5 text-xs font-bold text-paper">
+                  {t('standUp')}
+                </button>
+              </>
+            )}
           </div>
         </header>
 
-        <nav className="absolute top-16 bottom-4 left-3 z-20 flex w-24 flex-col gap-3 overflow-y-auto sm:left-4" aria-label="Programs">
+        <nav className="absolute top-16 bottom-4 start-3 z-20 flex w-28 flex-col gap-3 overflow-y-auto sm:start-4" aria-label={t('programs')}>
           {PROGRAMS.map((program) => {
             const active = app === program.id
             return (
@@ -168,19 +183,19 @@ export function ComputerDesktop({
                 >
                   <ProgramMark id={program.id} />
                 </span>
-                <span className="rounded-full bg-paper/95 px-2 py-0.5 text-xs font-bold text-ink">{program.label}</span>
+                <span className="rounded-full bg-paper/95 px-2 py-0.5 text-center text-xs font-bold text-ink">{t(program.label)}</span>
               </button>
             )
           })}
         </nav>
 
         {app === 'tasks' && !openBoard ? (
-          <section className="absolute top-16 right-3 bottom-4 left-28 z-10 flex flex-col overflow-hidden rounded-card bg-paper text-ink shadow-card sm:right-4 sm:left-32">
+          <section className="absolute top-16 end-3 bottom-4 start-32 z-10 flex flex-col overflow-hidden rounded-card bg-paper text-ink shadow-card sm:end-4 sm:start-36">
             <div className="flex items-start justify-between gap-3 border-b border-ink/10 px-4 py-3">
               <div>
-                <p className="text-xs font-bold tracking-[0.16em] text-ink/60 uppercase">Tasks</p>
-                <h2 className="font-bold text-3xl leading-none">All boards</h2>
-                <p className="mt-1 text-xs text-ink/60">Floor boards, plus any board you create. A new board can belong to a project.</p>
+                <p className="text-xs font-bold tracking-[0.16em] text-ink/60 uppercase">{t('tasks')}</p>
+                <h2 className="font-bold text-3xl leading-none">{t('allBoards')}</h2>
+                <p className="mt-1 text-xs text-ink/60">{t('boardsHint')}</p>
               </div>
               <div className="flex shrink-0 gap-2">
                 <button
@@ -196,10 +211,10 @@ export function ComputerDesktop({
                   }}
                   className="rounded-full bg-ink px-3 py-1.5 text-xs font-bold text-paper"
                 >
-                  New board
+                  {t('newBoard')}
                 </button>
                 <button type="button" onClick={() => setApp(null)} className="rounded-full bg-frost px-3 py-1.5 text-xs font-bold text-ink">
-                  Close
+                  {t('close')}
                 </button>
               </div>
             </div>
@@ -213,13 +228,13 @@ export function ComputerDesktop({
                   }}
                 >
                   <label className="block text-xs font-bold tracking-[0.14em] text-ink/50 uppercase">
-                    Name
-                    <input value={boardName} onChange={(event) => setBoardName(event.target.value)} placeholder="Launch checklist" className="mt-1 w-full rounded-2xl border border-ink/15 bg-paper px-3 py-2 text-sm font-medium text-ink outline-none placeholder:text-ink/40 focus-visible:border-lift" />
+                    {t('name')}
+                    <input value={boardName} onChange={(event) => setBoardName(event.target.value)} placeholder={t('launchChecklist')} className="mt-1 w-full rounded-2xl border border-ink/15 bg-paper px-3 py-2 text-sm font-medium text-ink outline-none placeholder:text-ink/40 focus-visible:border-lift" />
                   </label>
                   <label className="block text-xs font-bold tracking-[0.14em] text-ink/50 uppercase">
-                    Project
+                    {t('project')}
                     <select value={boardProject} onChange={(event) => setBoardProject(event.target.value)} className="mt-1 w-full rounded-2xl border border-ink/15 bg-paper px-3 py-2 text-sm font-medium text-ink outline-none">
-                      <option value="">No project</option>
+                      <option value="">{t('noProject')}</option>
                       {projectChoices.map((project) => (
                         <option key={project.id} value={project.id}>{project.name}</option>
                       ))}
@@ -228,16 +243,16 @@ export function ComputerDesktop({
                   {boardError ? <p className="text-sm font-medium text-danger">{boardError}</p> : null}
                   <div className="flex gap-2">
                     <button type="submit" disabled={!boardName.trim()} className="rounded-full bg-ink px-3 py-1.5 text-xs font-bold text-paper disabled:opacity-60">
-                      Create
+                      {t('create')}
                     </button>
                     <button type="button" onClick={() => setDrafting(false)} className="rounded-full bg-paper px-3 py-1.5 text-xs font-bold text-ink">
-                      Cancel
+                      {t('cancel')}
                     </button>
                   </div>
                 </form>
               ) : null}
               {catalog.length === 0 ? (
-                <p className="rounded-card border border-line bg-mist px-4 py-6 text-sm text-ink">No boards on this floor yet.</p>
+                <p className="rounded-card border border-line bg-mist px-4 py-6 text-sm text-ink">{t('noBoards')}</p>
               ) : (
                 catalog.map((board) => <BoardGlance key={board.id} board={board} onOpen={() => setBoardId(board.id)} />)
               )}
@@ -246,7 +261,7 @@ export function ComputerDesktop({
         ) : null}
 
         {app === 'tasks' && openBoard ? (
-          <div className="absolute top-16 right-3 bottom-4 left-28 z-10 overflow-hidden rounded-card sm:right-4 sm:left-32">
+          <div className="absolute top-16 end-3 bottom-4 start-32 z-10 overflow-hidden rounded-card sm:end-4 sm:start-36">
             <div className="relative h-full">
               <TaskBoard boardId={openBoard.id} title={openBoard.title} people={people} onClose={() => setBoardId(null)} />
             </div>
@@ -279,10 +294,15 @@ function Wallpaper() {
       <div className="absolute inset-0 flex flex-col items-center justify-center px-6 text-center text-ink">
         <img src="/branding/corplift-logo.svg" alt="CorpLift" className="w-56 max-w-[70%] sm:w-72" />
         <p className="mt-6 text-4xl leading-tight font-black text-ink sm:text-6xl">CORP Realm</p>
-        <p className="mt-2 text-sm text-slate">The desk is on. Open a program on the left.</p>
+        <DeskHint />
       </div>
     </div>
   )
+}
+
+function DeskHint() {
+  const t = useT()
+  return <p className="mt-2 text-sm text-slate">{t('deskOn')}</p>
 }
 
 function ProgramMark({ id }: { id: ProgramId }) {
@@ -355,6 +375,7 @@ function TasksMark() {
 }
 
 function BoardGlance({ board, onOpen }: { board: DeskBoard; onOpen: () => void }) {
+  const t = useT()
   const saved = useTaskStore((state) => state.boards[board.id])
   const ensure = useTaskStore((state) => state.ensure)
   const data = saved ?? seedBoard(board.id)
@@ -367,11 +388,11 @@ function BoardGlance({ board, onOpen }: { board: DeskBoard; onOpen: () => void }
     <article className="rounded-card border border-line bg-mist p-3 text-ink">
       <div className="flex items-center justify-between gap-3">
         <div className="min-w-0">
-          <h3 className="truncate font-bold text-2xl leading-none">{board.title}</h3>
+          <h3 className="truncate font-bold text-2xl leading-none">{knownCopy(board.title, t)}</h3>
           {board.projectName ? <p className="mt-1 truncate text-xs font-medium text-ink/60">{board.projectName}</p> : null}
         </div>
         <button type="button" onClick={onOpen} className="shrink-0 rounded-full bg-ink px-3 py-1.5 text-xs font-bold text-paper">
-          Open
+          {t('open')}
         </button>
       </div>
       <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
@@ -380,17 +401,17 @@ function BoardGlance({ board, onOpen }: { board: DeskBoard; onOpen: () => void }
           return (
             <div key={column.id} className="w-40 shrink-0 rounded-2xl bg-paper p-2 text-ink">
               <div className="flex items-center justify-between gap-2">
-                <p className="min-w-0 truncate text-xs font-bold text-ink">{column.title}</p>
+                <p className="min-w-0 truncate text-xs font-bold text-ink">{knownCopy(column.title, t)}</p>
                 <span className="rounded-full bg-frost px-1.5 text-[11px] font-medium text-ink">{cards.length}</span>
               </div>
               <div className="mt-2 space-y-1.5">
-                {cards.length === 0 ? <p className="text-[11px] text-ink/60">Nothing here yet.</p> : null}
+                {cards.length === 0 ? <p className="text-[11px] text-ink/60">{t('nothingYet')}</p> : null}
                 {cards.slice(0, 3).map((card) => (
                   <p key={card.id} className="truncate rounded-xl bg-frost px-2 py-1 text-xs text-ink">
                     {card.title}
                   </p>
                 ))}
-                {cards.length > 3 ? <p className="text-[11px] font-medium text-ink/70">+{cards.length - 3} more</p> : null}
+                {cards.length > 3 ? <p className="text-[11px] font-medium text-ink/70">{t('more', { n: cards.length - 3 })}</p> : null}
               </div>
             </div>
           )

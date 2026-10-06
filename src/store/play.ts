@@ -1,13 +1,17 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
+export type Lang = 'en' | 'ar'
+
 type PlaySettings = {
+  lang: Lang
   fov: number
   sensitivity: number
   voice: number
   output: number
   micId: string
   headId: string
+  setLang: (lang: Lang) => void
   setFov: (fov: number) => void
   setSensitivity: (sensitivity: number) => void
   setVoice: (voice: number) => void
@@ -24,12 +28,14 @@ function clamp(value: number, min: number, max: number) {
 export const usePlaySettings = create<PlaySettings>()(
   persist(
     (set) => ({
+      lang: 'en',
       fov: 52,
       sensitivity: 1,
       voice: 1,
       output: 1,
       micId: '',
       headId: '',
+      setLang: (lang) => set({ lang: lang === 'ar' ? 'ar' : 'en' }),
       setFov: (fov) => set({ fov: clamp(fov, 40, 90) }),
       setSensitivity: (sensitivity) => set({ sensitivity: clamp(sensitivity, 0.25, 2.5) }),
       setVoice: (voice) => set({ voice: clamp(voice, 0, 1) }),

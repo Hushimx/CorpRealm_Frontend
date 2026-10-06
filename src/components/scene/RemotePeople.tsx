@@ -2,6 +2,7 @@ import { Html } from '@react-three/drei'
 import { useFrame } from '@react-three/fiber'
 import { useRef } from 'react'
 import type { Group } from 'three'
+import { useT } from '../../i18n'
 import { SKINS, type PoseId, type SkinId } from '../../avatar/parts'
 import { OFFICE_AVATAR_SCALE } from '../../office/scale'
 import { BlockyCharacter } from './BlockyAvatar'
@@ -36,6 +37,7 @@ function skin(value: string): SkinId {
 }
 
 function RemotePerson({ body }: { body: RemoteBody }) {
+  const t = useT()
   const group = useRef<Group>(null)
   const target = useRef(body)
   target.current = body
@@ -64,7 +66,7 @@ function RemotePerson({ body }: { body: RemoteBody }) {
       />
       <Html position={[0, 2.75, 0]} center distanceFactor={9} zIndexRange={[20, 0]} style={{ pointerEvents: 'none' }}>
         <span className="block whitespace-nowrap rounded-full bg-paper px-2 py-0.5 text-[11px] font-bold text-ink shadow-pop">
-          {body.name.trim() || 'Guest'}
+          {body.name.trim() || t('guest')}
         </span>
       </Html>
     </group>

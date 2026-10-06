@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
+import { drawCopy, useT, type CopyKey } from '../i18n'
 import { chooseMove } from './ai'
 import { PieceMark } from './pieces'
-import { classify, createGame, legalMoves, playMove, squareName, statusLine, type Game, type Kind, type Move, type Promotion, type Side } from './rules'
+import { classify, createGame, legalMoves, playMove, squareName, type Ending, type Game, type Kind, type Move, type Promotion, type Side } from './rules'
 
 type Mode = 'cpu' | 'hotseat'
 
@@ -14,6 +15,7 @@ export function ChessGame({
   onClose: () => void
   shared?: { game: Game; side: Side | null; onMove: (move: Move) => void }
 }) {
+  const t = useT()
   const [localGame, setGame] = useState(createGame)
   const game = shared?.game ?? localGame
   const [mode, setMode] = useState<Mode>('cpu')
@@ -109,17 +111,17 @@ export function ChessGame({
         <div className="flex min-h-0 min-w-0 flex-1 flex-col items-center gap-3 overflow-y-auto p-4 sm:p-5">
           <header className="flex w-full flex-wrap items-center justify-between gap-3">
             <div>
-              <p className="text-xs font-bold tracking-[0.16em] text-ink/60 uppercase">Chess table</p>
-              <h2 className="font-bold text-4xl leading-none">Chess</h2>
+              <p className="text-xs font-bold tracking-[0.16em] text-ink/60 uppercase">{t('chessTable')}</p>
+              <h2 className="font-bold text-4xl leading-none">{t('chess')}</h2>
             </div>
             <div className="flex flex-wrap items-center gap-2">
               {shared ? null : (
                 <>
                   <button type="button" aria-pressed={mode === 'cpu'} onClick={() => setMode('cpu')} className={chip(mode === 'cpu')}>
-                    Vs computer
+                    {t('vsComputer')}
                   </button>
                   <button type="button" aria-pressed={mode === 'hotseat'} onClick={() => setMode('hotseat')} className={chip(mode === 'hotseat')}>
-                    Two players
+                    {t('twoPlayers')}
                   </button>
                   <button
                     type="button"
@@ -130,27 +132,27 @@ export function ChessGame({
                     }}
                     className="rounded-full bg-frost px-3 py-1.5 text-xs font-bold text-ink"
                   >
-                    New game
+                    {t('newGame')}
                   </button>
                 </>
               )}
               <button type="button" onClick={onClose} className="rounded-full bg-ink px-3 py-1.5 text-xs font-bold text-paper">
-                Leave table
+                {t('leaveTable')}
               </button>
             </div>
           </header>
-          <p className="w-full text-sm font-medium text-ink">{cpuTurn ? 'Black is thinking.' : statusLine(game, ending)}</p>
+          <p className="w-full text-sm font-medium text-ink">{cpuTurn ? t('blackThinking') : chessStatus(game, ending, t)}</p>
           {pending !== null && selected !== null ? (
-            <div className="flex items-center gap-2 rounded-full bg-frost px-3 py-2 text-ink">
-              <span className="text-sm font-medium">Promote to</span>
+            <div className="flex items-center gap-2 rounded-full bg-frost px-3 py-2 text-ink" dir="ltr">
+              <span className="text-sm font-medium">{t('promoteTo')}</span>
               {PROMOTIONS.map((kind) => (
-                <button key={kind} type="button" aria-label={kindName(kind)} onClick={() => promote(kind)} className="@container flex h-11 w-11 items-center justify-center rounded-xl bg-paper">
+                <button key={kind} type="button" aria-label={t(kindName(kind))} onClick={() => promote(kind)} className="@container flex h-11 w-11 items-center justify-center rounded-xl bg-paper">
                   <PieceMark side={game.position.turn} kind={kind} />
                 </button>
               ))}
             </div>
           ) : null}
-          <div className="w-full max-w-[min(32rem,max(20rem,calc(100svh-14rem)))]">
+          <div className="w-full max-w-[min(32rem,max(20rem,calc(100svh-14rem)))]" dir="ltr">
             <div className="grid grid-cols-[1.1rem_minmax(0,1fr)] gap-1">
               <div className="grid grid-rows-8">
                 {ranks.map((rank) => (
@@ -159,7 +161,7 @@ export function ChessGame({
                   </span>
                 ))}
               </div>
-              <div className="grid aspect-square grid-cols-8 grid-rows-8 overflow-hidden rounded-xl border-2 border-ink" role="grid" aria-label="Chessboard">
+              <div className="grid aspect-square grid-cols-8 grid-rows-8 overflow-hidden rounded-xl border-2 border-ink" role="grid" aria-label={t('chessboard')}>
                 {ranks.flatMap((rank) =>
                   files.map((file) => {
                     const index = rank * 8 + file
@@ -172,7 +174,7 @@ export function ChessGame({
                       <button
                         key={index}
                         type="button"
-                        aria-label={labelFor(index, occupant)}
+                        aria-label={labelFor(index, occupant, t)}
                         onClick={() => chooseSquare(index)}
                         className="@container relative flex min-h-0 min-w-0 items-center justify-center"
                         style={{
@@ -201,8 +203,8 @@ export function ChessGame({
             </div>
           </div>
         </div>
-        <aside className="max-h-40 overflow-y-auto border-t border-ink/10 bg-frost p-4 text-ink md:max-h-none md:w-60 md:border-t-0 md:border-l">
-          <p className="text-xs font-bold tracking-[0.16em] text-ink/60 uppercase">Moves</p>
+        <aside className="max-h-40 overflow-y-auto border-t border-ink/10 bg-frost p-4 text-ink md:max-h-none md:w-60 md:border-t-0 md:border-s" dir="ltr">
+          <p className="text-xs font-bold tracking-[0.16em] text-ink/60 uppercase">{t('moves')}</p>
           {rows.length ? (
             <ol className="mt-3 space-y-1 text-sm">
               {rows.map((row) => (
@@ -214,14 +216,14 @@ export function ChessGame({
               ))}
             </ol>
           ) : (
-            <p className="mt-3 text-sm text-ink/70">No moves yet. White plays from the near side.</p>
+            <p className="mt-3 text-sm text-ink/70">{t('noMoves')}</p>
           )}
           {shared ? (
             <p className="mt-4 text-sm text-ink">
-              {shared.side === 'w' ? 'You play white.' : shared.side === 'b' ? 'You play black.' : 'Waiting for a seat at this table.'}
+              {shared.side === 'w' ? t('youWhite') : shared.side === 'b' ? t('youBlack') : t('waitingSeat')}
             </p>
           ) : null}
-          <p className="mt-4 text-xs leading-relaxed text-ink/60">Click a piece, then a marked square. Esc leaves the table. Against the computer you play white.</p>
+          <p className="mt-4 text-xs leading-relaxed text-ink/60">{t('chessHelp')}</p>
         </aside>
       </section>
     </div>
@@ -232,14 +234,23 @@ function chip(selected: boolean) {
   return ['rounded-full px-3 py-1.5 text-xs font-bold', selected ? 'bg-ink text-paper' : 'bg-frost text-ink'].join(' ')
 }
 
-function kindName(kind: Kind) {
-  const names: Record<Kind, string> = { k: 'king', q: 'queen', r: 'rook', b: 'bishop', n: 'knight', p: 'pawn' }
+function kindName(kind: Kind): CopyKey {
+  const names: Record<Kind, CopyKey> = { k: 'king', q: 'queen', r: 'rook', b: 'bishop', n: 'knight', p: 'pawn' }
   return names[kind]
 }
 
-function labelFor(index: number, occupant: { side: 'w' | 'b'; kind: Kind } | null) {
+function labelFor(index: number, occupant: { side: 'w' | 'b'; kind: Kind } | null, t: (key: CopyKey) => string) {
   const name = squareName(index)
   if (!occupant) return name
-  const side = occupant.side === 'w' ? 'white' : 'black'
-  return `${name} ${side} ${kindName(occupant.kind)}`
+  const side = occupant.side === 'w' ? t('white') : t('black')
+  return `${name} ${side} ${t(kindName(occupant.kind))}`
+}
+
+function chessStatus(game: Game, ending: Ending, t: (key: CopyKey, vars?: Record<string, string | number>) => string) {
+  const side = game.position.turn === 'w' ? t('white') : t('black')
+  if (ending.kind === 'mate') return game.position.turn === 'b' ? t('mateWhite') : t('mateBlack')
+  if (ending.kind === 'stalemate') return t('stalemate')
+  if (ending.kind === 'draw') return t('drawReason', { reason: drawCopy(ending.reason, t) })
+  if (ending.kind === 'check') return t('inCheck', { side })
+  return t('toMove', { side })
 }

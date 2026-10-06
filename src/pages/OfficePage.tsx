@@ -15,6 +15,7 @@ import { useOfficeMedia } from '../net/media'
 import { useOfficeRoom } from '../net/room'
 import type { Motion } from '../components/scene/OfficeWorld'
 import { useOfficePeople } from '../net/people'
+import { knownCopy, roomCopy, useT } from '../i18n'
 import { useSession } from '../net/session'
 import { useAvatarStore } from '../store/avatar'
 
@@ -26,8 +27,8 @@ const pads = [
   { key: 'a', label: 'A' },
   { key: 's', label: 'S' },
   { key: 'd', label: 'D' },
-  { key: ' ', label: 'Jump' },
-  { key: 'shift', label: 'Sprint' },
+  { key: ' ', label: 'jump' as const },
+  { key: 'shift', label: 'sprint' as const },
 ]
 
 export function OfficePage() {
@@ -81,6 +82,7 @@ export function OfficePage() {
   const nearChess = busy || presence.sitting ? null : chessInReach(presence.x, presence.z, STUDIO_CHESS)
   const nearXo = busy || presence.sitting || nearChess ? null : chessInReach(presence.x, presence.z, STUDIO_XO)
   const board = OFFICE_BOARDS.find((item) => item.id === openBoard) ?? null
+  const t = useT()
 
   function openTasks(id: string) {
     clearHeld()
@@ -197,10 +199,10 @@ export function OfficePage() {
     <div className={`relative h-svh bg-night ${looking && !menuOpen ? 'cursor-none' : ''}`}>
       <OfficeStage parts={{ face, outfit, pants }} others={room.others} onPresence={setPresence} onPlace={room.standAt} onMotion={follow} place={room.place} screens={media.screens} overview={overview} paused={menuOpen || board !== null || computer.open || chessOpen || xoOpen} />
       <div className="pointer-events-none absolute inset-0">
-        <div className="absolute top-3 right-3 flex flex-col items-end gap-3 sm:top-4 sm:right-4">
+        <div className="absolute top-3 end-3 flex flex-col items-end gap-3 sm:top-4 sm:end-4">
           {!overview && room.livekit ? <VoiceRoster media={media} faces={{ ...(user ? { [user.id]: face } : {}), ...Object.fromEntries(room.others.map((person) => [person.userId, person.face])) }} /> : null}
-        <aside className="pointer-events-auto rounded-card bg-paper p-2 text-ink shadow-card">
-          <svg viewBox="-19 -25 38 38" className="h-36 w-48 sm:h-40 sm:w-56" role="img" aria-label="Office map">
+        <aside className="pointer-events-auto rounded-card bg-paper p-2 text-ink shadow-card" dir="ltr">
+          <svg viewBox="-19 -25 38 38" className="h-36 w-48 sm:h-40 sm:w-56" role="img" aria-label={t('officeMap')}>
             {rooms.map((room) => (
               <g key={room.id}>
                 <rect
@@ -220,7 +222,7 @@ export function OfficePage() {
                   fontSize="1.15"
                   fill="#000000"
                 >
-                  {room.short}
+                  {roomCopy(room.id, room.short, t)}
                 </text>
               </g>
             ))}
@@ -242,22 +244,22 @@ export function OfficePage() {
             onClick={() => setOverview(false)}
             className="pointer-events-auto absolute bottom-20 left-1/2 -translate-x-1/2 rounded-full bg-ink px-4 py-2 text-sm font-bold text-paper shadow-pop sm:bottom-24"
           >
-            Walk inside
+            {t('walkInside')}
           </button>
         ) : null}
 
         {looking || overview || listOpen || menuOpen ? null : (
           <div className="absolute inset-0 flex items-center justify-center px-4">
             <p className="flex max-w-xl flex-wrap items-center justify-center gap-1.5 rounded-full bg-paper px-4 py-2 text-sm font-medium text-ink shadow-pop">
-              <KeyCap name="click" alt="Click" className="h-8 w-auto" />
-              <span>or</span>
+              <KeyCap name="click" alt={t('click')} className="h-8 w-auto" />
+              <span>{t('or')}</span>
               <KeyCap name="w" alt="W" className="h-8 w-auto" />
               <KeyCap name="a" alt="A" className="h-8 w-auto" />
               <KeyCap name="s" alt="S" className="h-8 w-auto" />
               <KeyCap name="d" alt="D" className="h-8 w-auto" />
-              <span>The cursor hides.</span>
+              <span>{t('cursorHides')}</span>
               <KeyCap name="esc" alt="Esc" className="h-8 w-auto" />
-              <span>for the menu.</span>
+              <span>{t('forMenu')}</span>
             </p>
           </div>
         )}
@@ -269,7 +271,7 @@ export function OfficePage() {
               onClick={computer.show}
               className="rounded-full bg-ink px-4 py-2 text-sm font-medium text-paper shadow-pop"
             >
-              Use computer
+              {t('useComputer')}
             </button>
             <button
               type="button"
@@ -277,7 +279,7 @@ export function OfficePage() {
               className="flex items-center gap-2 rounded-full bg-paper px-4 py-2 text-sm font-medium text-ink shadow-pop"
             >
               <KeyCap name="e" alt="E" className="h-8 w-auto" />
-              Stand up
+              {t('standUp')}
             </button>
           </div>
         ) : !overview && !board && !computer.open && presence.sitting ? (
@@ -287,13 +289,13 @@ export function OfficePage() {
             className="pointer-events-auto absolute bottom-20 left-1/2 flex -translate-x-1/2 items-center gap-2 rounded-full bg-paper px-4 py-2 text-sm font-medium text-ink shadow-pop sm:bottom-24"
           >
             <KeyCap name="e" alt="E" className="h-8 w-auto" />
-            Stand up
+            {t('standUp')}
           </button>
         ) : nearDoor ? (
           <button type="button" onClick={() => toggleDoor(nearDoor)} disabled={doorObstructed}
             className="pointer-events-auto absolute bottom-20 left-1/2 flex -translate-x-1/2 items-center gap-2 rounded-full bg-paper px-4 py-2 text-sm font-medium text-ink shadow-lg disabled:opacity-70 sm:bottom-24">
             <KeyCap name="e" alt="E" className="h-8 w-auto" />
-            <span className="flex flex-col items-start"><span>{doorObstructed ? 'Step away to close' : doorIsOpen ? 'Close door' : 'Open door'}</span><span className="text-xs text-ink/55">{nearDoor.label ?? 'Office'}{movingDoors[doorId(nearDoor)] ? doorIsOpen ? ' · Opening…' : ' · Closing…' : ''}</span></span>
+            <span className="flex flex-col items-start"><span>{doorObstructed ? t('stepAway') : doorIsOpen ? t('closeDoor') : t('openDoor')}</span><span className="text-xs text-ink/55">{knownCopy(nearDoor.label ?? '', t) || t('officeDoor')}{movingDoors[doorId(nearDoor)] ? doorIsOpen ? ` · ${t('opening')}` : ` · ${t('closing')}` : ''}</span></span>
           </button>
         ) : nearChess ? (
           <button
@@ -302,7 +304,7 @@ export function OfficePage() {
             className="pointer-events-auto absolute bottom-20 left-1/2 flex -translate-x-1/2 items-center gap-2 rounded-full bg-paper px-4 py-2 text-sm font-medium text-ink shadow-pop sm:bottom-24"
           >
             <KeyCap name="e" alt="E" className="h-8 w-auto" />
-            Play chess
+            {t('playChess')}
           </button>
         ) : nearXo ? (
           <button
@@ -311,7 +313,7 @@ export function OfficePage() {
             className="pointer-events-auto absolute bottom-20 left-1/2 flex -translate-x-1/2 items-center gap-2 rounded-full bg-paper px-4 py-2 text-sm font-medium text-ink shadow-pop sm:bottom-24"
           >
             <KeyCap name="e" alt="E" className="h-8 w-auto" />
-            Play XO
+            {t('playXo')}
           </button>
         ) : near ? (
           <button
@@ -320,8 +322,8 @@ export function OfficePage() {
             className="pointer-events-auto absolute bottom-20 left-1/2 flex -translate-x-1/2 items-center gap-2 rounded-full bg-paper px-4 py-2 text-sm font-medium text-ink shadow-pop sm:bottom-24"
           >
             <KeyCap name="e" alt="E" className="h-8 w-auto" />
-            Open tasks
-            <span className="text-ink/60">{near.title}</span>
+            {t('openTasks')}
+            <span className="text-ink/60">{knownCopy(near.title, t)}</span>
           </button>
         ) : !overview && presence.nearSeat ? (
           <button
@@ -330,7 +332,7 @@ export function OfficePage() {
             className="pointer-events-auto absolute bottom-20 left-1/2 flex -translate-x-1/2 items-center gap-2 rounded-full bg-paper px-4 py-2 text-sm font-medium text-ink shadow-pop sm:bottom-24"
           >
             <KeyCap name="e" alt="E" className="h-8 w-auto" />
-            Sit down
+            {t('sitDown')}
           </button>
         ) : null}
 
@@ -340,7 +342,7 @@ export function OfficePage() {
             <button
               key={pad.key}
               type="button"
-              aria-label={pad.label}
+              aria-label={pad.label === 'jump' || pad.label === 'sprint' ? t(pad.label) : pad.label}
               className="group rounded-md p-0"
               onPointerDown={(event) => {
                 event.preventDefault()
@@ -351,7 +353,7 @@ export function OfficePage() {
               onPointerLeave={() => holdKey(pad.key, false)}
               onPointerCancel={() => holdKey(pad.key, false)}
             >
-              <KeyCap name={pad.key} alt={pad.label} />
+              <KeyCap name={pad.key} alt={pad.label === 'jump' || pad.label === 'sprint' ? t(pad.label) : pad.label} />
             </button>
           ))}
         </div>}

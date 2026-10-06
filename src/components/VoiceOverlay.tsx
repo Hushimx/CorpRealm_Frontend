@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { SKINS, skinCropStyle, type SkinId } from '../avatar/parts'
+import { useT } from '../i18n'
 import { VOICE_REACH, type OfficeMedia, type VoicePerson } from '../net/media'
 
 const icon = 'h-5 w-5'
@@ -55,6 +56,7 @@ export function VoiceRoster({ media, faces }: { media: OfficeMedia; faces: Recor
 }
 
 export function VoiceBar({ media }: { media: OfficeMedia }) {
+  const t = useT()
   const box = useRef<HTMLDivElement>(null)
   const [open, setOpen] = useState(false)
 
@@ -71,36 +73,36 @@ export function VoiceBar({ media }: { media: OfficeMedia }) {
   const hot = 'grid h-10 w-10 place-items-center rounded-full bg-ink text-paper disabled:opacity-40'
 
   return (
-    <div ref={box} className="pointer-events-auto absolute right-3 bottom-16 z-30 sm:right-4 sm:bottom-4">
+    <div ref={box} className="pointer-events-auto absolute end-3 bottom-16 z-30 sm:end-4 sm:bottom-4">
       {open ? (
-        <div className="absolute right-0 bottom-full mb-2 w-64 rounded-2xl bg-paper p-3 text-ink shadow-card">
-          <p className="text-[10px] font-bold tracking-[0.16em] text-ink/60 uppercase">Microphone</p>
-          <DeviceList empty="No microphones found." devices={media.mics} selected={media.micId} onPick={(id) => void media.chooseMic(id)} />
-          <p className="mt-3 text-[10px] font-bold tracking-[0.16em] text-ink/60 uppercase">Headset</p>
+        <div className="absolute end-0 bottom-full mb-2 w-64 rounded-2xl bg-paper p-3 text-ink shadow-card">
+          <p className="text-[10px] font-bold tracking-[0.16em] text-ink/60 uppercase">{t('microphone')}</p>
+          <DeviceList empty={t('noMics')} devices={media.mics} selected={media.micId} onPick={(id) => void media.chooseMic(id)} />
+          <p className="mt-3 text-[10px] font-bold tracking-[0.16em] text-ink/60 uppercase">{t('headset')}</p>
           {media.heads.length === 0 ? (
-            <p className="mt-1 text-xs text-ink/70">This browser picks the headset for you.</p>
+            <p className="mt-1 text-xs text-ink/70">{t('browserHeadset')}</p>
           ) : (
-            <DeviceList empty="No headsets found." devices={media.heads} selected={media.headId} onPick={(id) => void media.chooseHead(id)} />
+            <DeviceList empty={t('noHeadsets')} devices={media.heads} selected={media.headId} onPick={(id) => void media.chooseHead(id)} />
           )}
         </div>
       ) : null}
       {media.error ? <p className="mb-2 max-w-64 rounded-2xl bg-paper px-3 py-2 text-xs font-medium text-danger shadow-pop">{media.error}</p> : null}
       {media.ready && !media.hearing ? (
         <button type="button" onClick={() => void media.unlock()} className="mb-2 block rounded-full bg-paper px-3 py-1.5 text-xs font-medium text-ink shadow-pop">
-          Turn sound on
+          {t('soundOn')}
         </button>
       ) : null}
       <div className="flex items-center gap-1 rounded-full bg-paper p-1 text-ink shadow-card">
-        <button type="button" aria-pressed={media.mic} aria-label={media.mic ? 'Mute microphone' : 'Unmute microphone'} disabled={!media.ready} onClick={() => void media.toggleMic()} className={media.mic ? idle : hot}>
+        <button type="button" aria-pressed={media.mic} aria-label={media.mic ? t('muteMic') : t('unmuteMic')} disabled={!media.ready} onClick={() => void media.toggleMic()} className={media.mic ? idle : hot}>
           <MicMark off={!media.mic} />
         </button>
-        <button type="button" aria-pressed={media.deaf} aria-label={media.deaf ? 'Undeafen' : 'Deafen'} disabled={!media.ready} onClick={() => void media.toggleDeaf()} className={media.deaf ? hot : idle}>
+        <button type="button" aria-pressed={media.deaf} aria-label={media.deaf ? t('undeafen') : t('deafen')} disabled={!media.ready} onClick={() => void media.toggleDeaf()} className={media.deaf ? hot : idle}>
           <HeadMark off={media.deaf} />
         </button>
         <button
           type="button"
           aria-expanded={open}
-          aria-label="Sound settings"
+          aria-label={t('soundSettings')}
           disabled={!media.ready}
           onClick={() => {
             const next = !open
@@ -144,7 +146,7 @@ export function floorMates(
   if (self) {
     people.push({
       id: self.id,
-      name: self.name.trim() || 'You',
+      name: self.name.trim(),
       face: self.face,
       x: self.x,
       z: self.z,
@@ -156,7 +158,7 @@ export function floorMates(
     if (self && person.userId === self.id) continue
     people.push({
       id: person.userId,
-      name: person.name.trim() || 'Guest',
+      name: person.name.trim(),
       face: person.face,
       x: person.x,
       z: person.z,
@@ -245,6 +247,7 @@ export function OfficeRoll({
     const timer = window.setInterval(() => setNow(Date.now()), 1000)
     return () => window.clearInterval(timer)
   }, [open])
+  const t = useT()
   if (!open) return null
   const speaking = new Set(voices.filter((person) => person.speaking).map((person) => person.id))
   const rows = people
@@ -259,25 +262,25 @@ export function OfficeRoll({
   return (
     <div className="pointer-events-none absolute inset-0 z-40 flex items-center justify-center p-4">
       <section className="w-full max-w-sm rounded-card bg-paper px-4 py-3 text-ink shadow-card">
-        <p className="text-[10px] font-bold tracking-[0.16em] text-ink/60 uppercase">In the office</p>
-        <p className="mt-1 text-sm text-ink/75">{others === 0 ? 'You are the only one inside.' : `${others} ${others === 1 ? 'other person' : 'other people'} inside. Voice stays with whoever is nearby.`}</p>
+        <p className="text-[10px] font-bold tracking-[0.16em] text-ink/60 uppercase">{t('inOffice')}</p>
+        <p className="mt-1 text-sm text-ink/75">{others === 0 ? t('onlyOne') : others === 1 ? t('oneInside') : t('othersInside', { n: others })}</p>
         <div className="mt-3 rounded-2xl bg-frost px-3 py-2 text-ink">
-          <p className="text-[10px] font-bold tracking-[0.16em] text-ink/60 uppercase">This visit</p>
+          <p className="text-[10px] font-bold tracking-[0.16em] text-ink/60 uppercase">{t('thisVisit')}</p>
           <p className="font-bold text-4xl leading-none text-lift tabular-nums">{visit}</p>
         </div>
         <ul className="mt-3 flex max-h-72 flex-col gap-1 overflow-y-auto">
           {rows.map((person) => (
             <li key={person.id} className="flex items-center gap-2 rounded-2xl bg-mist/70 px-2 py-1.5">
               <span className={`block h-8 w-8 shrink-0 overflow-hidden rounded-full bg-frost ${speaking.has(person.id) ? 'ring-2 ring-lift' : ''}`} style={skinCropStyle('head', knownFace(person.face))} />
-              <span className="min-w-0 flex-1 truncate text-sm font-medium text-ink">{person.self ? `${person.name} (you)` : person.name}</span>
-              <span className="shrink-0 text-right">
+              <span className="min-w-0 flex-1 truncate text-sm font-medium text-ink">{person.self ? (person.name ? t('youTag', { name: person.name }) : t('you')) : (person.name || t('guest'))}</span>
+              <span className="shrink-0 text-end">
                 <span className="block text-xs text-ink tabular-nums">{person.since ? formatStay(now - person.since) : '0:00'}</span>
-                <span className={`block text-[10px] ${person.close ? 'font-medium text-lift' : 'text-ink/55'}`}>{person.self ? 'Here' : person.close ? 'Nearby' : 'Far'}</span>
+                <span className={`block text-[10px] ${person.close ? 'font-medium text-lift' : 'text-ink/55'}`}>{person.self ? t('here') : person.close ? t('nearby') : t('far')}</span>
               </span>
             </li>
           ))}
         </ul>
-        <p className="mt-2 text-xs text-ink/55">Release Tab to close.</p>
+        <p className="mt-2 text-xs text-ink/55">{t('releaseTab')}</p>
       </section>
     </div>
   )

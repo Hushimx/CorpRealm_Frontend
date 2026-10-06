@@ -95,3 +95,8 @@ body {
   background: var(--color-lift);
   color: var(--color-paper);
 }
+
+/* Arabic letters should stay tight. The tracked uppercase labels are for Latin. */
+html[dir='rtl'] .uppercase {
+  letter-spacing: 0;
+}

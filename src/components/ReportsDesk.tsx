@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { text, useLocale, useT } from '../i18n'
 import { ApiError, api } from '../net/api'
 import { useSession } from '../net/session'
 import type { Assignable } from './TaskBoard'
@@ -20,6 +21,8 @@ type Box = 'inbox' | 'sent'
 
 export function ReportsDesk({ officeId, people, onClose }: { officeId: string; people: Assignable[]; onClose: () => void }) {
   const me = useSession((state) => state.user)
+  const t = useT()
+  const locale = useLocale()
   const [box, setBox] = useState<Box>('inbox')
   const [reports, setReports] = useState<Report[]>([])
   const [unread, setUnread] = useState(0)
@@ -50,7 +53,7 @@ export function ReportsDesk({ officeId, people, onClose }: { officeId: string; p
           setSelectedId((current) => (current && next.reports.some((report) => report.id === current) ? current : null))
         })
         .catch((reason: unknown) => {
-          if (!closed) setError(reason instanceof ApiError ? reason.message : 'Reports could not be loaded.')
+          if (!closed) setError(reason instanceof ApiError ? reason.message : t('reportsFail'))
         })
     }
     load()
@@ -105,7 +108,7 @@ export function ReportsDesk({ officeId, people, onClose }: { officeId: string; p
     if (saved.length) {
       setReports((current) => current.map((item) => (item.id === reportId ? { ...item, files: [...item.files, ...saved] } : item)))
     }
-    setError(failed.length ? `Some files did not attach. ${failed.join(' ')}` : '')
+    setError(failed.length ? t('someAttach', { detail: failed.join(' ') }) : '')
   }
 
   function togglePerson(id: string) {
@@ -134,58 +137,58 @@ export function ReportsDesk({ officeId, people, onClose }: { officeId: string; p
       setRecipientIds([])
       setProjectId('')
       setAttachments([])
-      setError(failed.length ? `Sent, but some files did not attach. ${failed.join(' ')}` : '')
+      setError(failed.length ? t('sentSome', { detail: failed.join(' ') }) : '')
       setComposing(false)
       setBox('sent')
       setSelectedId(next.id)
       setReports((current) => [next, ...current.filter((item) => item.id !== next.id)])
     } catch (reason) {
-      setError(reason instanceof ApiError ? reason.message : 'The report could not be sent.')
+      setError(reason instanceof ApiError ? reason.message : t('reportFail'))
     } finally {
       setSending(false)
     }
   }
 
   return (
-    <section className="absolute top-16 right-3 bottom-4 left-28 z-10 flex flex-col overflow-hidden rounded-card bg-paper text-ink shadow-card sm:right-4 sm:left-32">
+    <section className="absolute top-16 end-3 bottom-4 start-32 z-10 flex flex-col overflow-hidden rounded-card bg-paper text-ink shadow-card sm:end-4 sm:start-36">
       <header className="flex items-start justify-between gap-3 border-b border-ink/10 px-4 py-3">
         <div className="min-w-0">
-          <p className="text-xs font-bold tracking-[0.16em] text-ink/60 uppercase">Reports</p>
-          <h2 className="truncate font-bold text-3xl leading-none text-ink">{composing ? 'New report' : selected ? selected.title : box === 'sent' ? 'Sent' : 'Inbox'}</h2>
-          <p className="mt-1 text-xs text-ink/60">Send a report to people in this office, and read the ones sent to you.</p>
+          <p className="text-xs font-bold tracking-[0.16em] text-ink/60 uppercase">{t('reports')}</p>
+          <h2 className="truncate font-bold text-3xl leading-none text-ink">{composing ? t('newReport') : selected ? selected.title : box === 'sent' ? t('sent') : t('inbox')}</h2>
+          <p className="mt-1 text-xs text-ink/60">{t('reportsHint')}</p>
         </div>
         <button type="button" onClick={onClose} className="shrink-0 rounded-full bg-frost px-3 py-1.5 text-xs font-bold text-ink">
-          Close
+          {t('close')}
         </button>
       </header>
       {error ? <p className="border-b border-line bg-mist px-4 py-2 text-sm font-medium text-danger">{error}</p> : null}
       <div className="flex min-h-0 flex-1">
-        <aside className={`${showList ? 'flex' : 'hidden sm:flex'} w-full shrink-0 flex-col border-ink/10 bg-mist sm:w-60 sm:border-r`}>
+        <aside className={`${showList ? 'flex' : 'hidden sm:flex'} w-full shrink-0 flex-col border-ink/10 bg-mist sm:w-60 sm:border-e`}>
           <div className="space-y-1 px-2 pt-3">
-            <SideButton label="Inbox" count={unread} active={!composing && box === 'inbox'} onClick={() => chooseBox('inbox')} />
-            <SideButton label="Sent" active={!composing && box === 'sent'} onClick={() => chooseBox('sent')} />
-            <button type="button" onClick={() => { setComposing(true); setSelectedId(null) }} className={`w-full rounded-xl px-3 py-2 text-left text-sm font-bold ${composing ? 'bg-ink text-paper' : 'bg-paper text-ink'}`}>
-              New report
+            <SideButton label={t('inbox')} count={unread} active={!composing && box === 'inbox'} onClick={() => chooseBox('inbox')} />
+            <SideButton label={t('sent')} active={!composing && box === 'sent'} onClick={() => chooseBox('sent')} />
+            <button type="button" onClick={() => { setComposing(true); setSelectedId(null) }} className={`w-full rounded-xl px-3 py-2 text-start text-sm font-bold ${composing ? 'bg-ink text-paper' : 'bg-paper text-ink'}`}>
+              {t('newReport')}
             </button>
           </div>
           <div className="mt-3 min-h-0 flex-1 space-y-1 overflow-y-auto px-2 pb-3">
             {reports.length === 0 ? (
-              <p className="px-2 py-3 text-xs text-ink/60">{box === 'sent' ? 'You have not sent a report yet.' : 'Nothing has been sent to you yet.'}</p>
+              <p className="px-2 py-3 text-xs text-ink/60">{box === 'sent' ? t('noneSent') : t('noneInbox')}</p>
             ) : null}
             {reports.map((report) => (
               <button
                 key={report.id}
                 type="button"
                 onClick={() => openReport(report)}
-                className={`block w-full rounded-xl px-2 py-2 text-left ${selected?.id === report.id && !composing ? 'bg-paper text-ink shadow-pop' : 'text-ink hover:bg-paper/70'}`}
+                className={`block w-full rounded-xl px-2 py-2 text-start ${selected?.id === report.id && !composing ? 'bg-paper text-ink shadow-pop' : 'text-ink hover:bg-paper/70'}`}
               >
                 <span className="flex items-center gap-2">
                   <span className={`h-2 w-2 shrink-0 rounded-full ${report.unread ? 'bg-lift' : 'bg-transparent'}`} />
                   <span className="min-w-0 flex-1 truncate text-sm font-bold">{report.title}</span>
-                  <span className="shrink-0 text-[11px] font-medium text-ink/50">{formatWhen(report.createdAt)}</span>
+                  <span className="shrink-0 text-[11px] font-medium text-ink/50">{formatWhen(report.createdAt, locale)}</span>
                 </span>
-                <span className="mt-0.5 block truncate pl-4 text-[11px] font-medium text-ink/55">
-                  {box === 'sent' ? `To ${names(report.recipients)}` : report.authorName}
+                <span className="mt-0.5 block truncate ps-4 text-[11px] font-medium text-ink/55">
+                  {box === 'sent' ? t('toPerson', { name: names(report.recipients, t('noOne')) }) : report.authorName}
                 </span>
               </button>
             ))}
@@ -201,40 +204,40 @@ export function ReportsDesk({ officeId, people, onClose }: { officeId: string; p
               }}
             >
               <button type="button" onClick={() => setComposing(false)} className="rounded-full bg-frost px-3 py-1 text-xs font-bold text-ink sm:hidden">
-                Back
+                {t('back')}
               </button>
               <label className="block text-xs font-bold tracking-[0.14em] text-ink/50 uppercase">
-                Title
+                {t('title')}
                 <input
                   value={title}
                   onChange={(event) => setTitle(event.target.value)}
-                  placeholder="Weekly floor notes"
+                  placeholder={t('weeklyNotes')}
                   className="mt-1 w-full rounded-2xl border border-ink/15 bg-paper px-3 py-2 text-sm font-medium text-ink outline-none placeholder:text-ink/40 focus-visible:border-lift"
                 />
               </label>
               <label className="block text-xs font-bold tracking-[0.14em] text-ink/50 uppercase">
-                Report
+                {t('report')}
                 <textarea
                   value={draft}
                   onChange={(event) => setDraft(event.target.value)}
                   rows={8}
-                  placeholder="What happened, and what should they know."
+                  placeholder={t('reportBody')}
                   className="mt-1 w-full resize-none rounded-2xl border border-ink/15 bg-paper px-3 py-2 text-sm font-medium text-ink outline-none placeholder:text-ink/40 focus-visible:border-lift"
                 />
               </label>
               <label className="block text-xs font-bold tracking-[0.14em] text-ink/50 uppercase">
-                Project
+                {t('project')}
                 <select value={projectId} onChange={(event) => setProjectId(event.target.value)} className="mt-1 w-full rounded-2xl border border-ink/15 bg-paper px-3 py-2 text-sm font-medium text-ink outline-none">
-                  <option value="">No project</option>
+                  <option value="">{t('noProject')}</option>
                   {projects.map((project) => (
                     <option key={project.id} value={project.id}>{project.name}</option>
                   ))}
                 </select>
               </label>
               <div>
-                <p className="text-xs font-bold tracking-[0.14em] text-ink/50 uppercase">Files</p>
+                <p className="text-xs font-bold tracking-[0.14em] text-ink/50 uppercase">{t('files')}</p>
                 <label className="mt-2 inline-block cursor-pointer rounded-full bg-frost px-3 py-1.5 text-xs font-bold text-ink">
-                  Attach files
+                  {t('attachFiles')}
                   <input
                     type="file"
                     multiple
@@ -252,50 +255,50 @@ export function ReportsDesk({ officeId, people, onClose }: { officeId: string; p
                       <li key={`${file.name}-${index}`} className="flex items-center justify-between gap-2 rounded-xl bg-mist px-2 py-1 text-sm text-ink">
                         <span className="min-w-0 truncate">{file.name}</span>
                         <button type="button" onClick={() => setAttachments((current) => current.filter((_, item) => item !== index))} className="shrink-0 text-xs font-bold text-danger">
-                          Remove
+                          {t('remove')}
                         </button>
                       </li>
                     ))}
                   </ul>
-                ) : <p className="mt-2 text-xs text-ink/55">No files attached.</p>}
+                ) : <p className="mt-2 text-xs text-ink/55">{t('noFiles')}</p>}
               </div>
               <div>
-                <p className="text-xs font-bold tracking-[0.14em] text-ink/50 uppercase">Send to</p>
-                {others.length === 0 ? <p className="mt-2 text-sm text-ink/60">No one else belongs to this office yet.</p> : null}
+                <p className="text-xs font-bold tracking-[0.14em] text-ink/50 uppercase">{t('sendTo')}</p>
+                {others.length === 0 ? <p className="mt-2 text-sm text-ink/60">{t('noOneBelongs')}</p> : null}
                 <div className="mt-2 flex flex-wrap gap-2">
                   {others.map((person) => {
                     const on = recipientIds.includes(person.id)
                     return (
                       <button key={person.id} type="button" aria-pressed={on} onClick={() => togglePerson(person.id)} className={`rounded-full px-3 py-1.5 text-xs font-bold ${on ? 'bg-ink text-paper' : 'bg-frost text-ink'}`}>
-                        {person.name.trim() || 'Unnamed'}
+                        {person.name.trim() || t('unnamed')}
                       </button>
                     )
                   })}
                 </div>
               </div>
               <button type="submit" disabled={sending || !title.trim() || !draft.trim() || recipientIds.length === 0} className="rounded-full bg-ink px-4 py-2 text-sm font-bold text-paper disabled:opacity-60">
-                {sending ? 'Sending…' : 'Send report'}
+                {sending ? t('sending') : t('sendReport')}
               </button>
             </form>
           ) : selected ? (
             <article className="min-h-0 flex-1 overflow-y-auto p-4">
               <button type="button" onClick={() => setSelectedId(null)} className="mb-3 rounded-full bg-frost px-3 py-1 text-xs font-bold text-ink sm:hidden">
-                Back
+                {t('back')}
               </button>
               <p className="text-xs font-medium text-ink/55">
-                From {selected.authorName} · {new Date(selected.createdAt).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
+                {t('fromPerson', { name: selected.authorName })} · {new Date(selected.createdAt).toLocaleString(locale, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
               </p>
-              <p className="mt-1 text-xs font-medium text-ink/70">To {names(selected.recipients)}{box === 'sent' ? readNote(selected.recipients) : ''}</p>
-              {selected.project ? <p className="mt-1 text-xs font-bold text-ink">Project · {selected.project.name}</p> : null}
+              <p className="mt-1 text-xs font-medium text-ink/70">{t('toPerson', { name: names(selected.recipients, t('noOne')) })}{box === 'sent' ? readNote(selected.recipients) : ''}</p>
+              {selected.project ? <p className="mt-1 text-xs font-bold text-ink">{t('projectDot', { name: selected.project.name })}</p> : null}
               <h3 className="mt-3 font-black text-2xl text-ink">{selected.title}</h3>
               <p className="mt-3 text-sm whitespace-pre-wrap text-ink">{selected.body}</p>
               <div className="mt-4">
-                <p className="text-xs font-bold tracking-[0.14em] text-ink/50 uppercase">Files</p>
-                {selected.files.length === 0 ? <p className="mt-2 text-sm text-ink/60">No files attached.</p> : null}
+                <p className="text-xs font-bold tracking-[0.14em] text-ink/50 uppercase">{t('files')}</p>
+                {selected.files.length === 0 ? <p className="mt-2 text-sm text-ink/60">{t('noFiles')}</p> : null}
                 <ul className="mt-2 space-y-1">
                   {selected.files.map((file) => (
                     <li key={file.id}>
-                      <button type="button" onClick={() => void downloadAttachment(officeId, file)} className="rounded-xl bg-mist px-3 py-2 text-left text-sm font-bold text-ink">
+                      <button type="button" onClick={() => void downloadAttachment(officeId, file)} className="rounded-xl bg-mist px-3 py-2 text-start text-sm font-bold text-ink">
                         {file.name}
                       </button>
                     </li>
@@ -303,7 +306,7 @@ export function ReportsDesk({ officeId, people, onClose }: { officeId: string; p
                 </ul>
                 {me?.id === selected.authorId ? (
                   <label className="mt-3 inline-block cursor-pointer rounded-full bg-frost px-3 py-1.5 text-xs font-bold text-ink">
-                    Attach a file
+                    {t('attachFile')}
                     <input
                       type="file"
                       multiple
@@ -321,8 +324,8 @@ export function ReportsDesk({ officeId, people, onClose }: { officeId: string; p
           ) : (
             <div className="grid flex-1 place-items-center px-6 text-center">
               <div className="max-w-sm rounded-card border border-dashed border-ink/15 bg-mist px-6 py-8">
-                <p className="font-bold text-lg text-ink">{box === 'sent' ? 'No report selected' : 'Your inbox is quiet'}</p>
-                <p className="mt-1 text-sm text-ink/60">Pick a report, or write a new one for someone in the office.</p>
+                <p className="font-bold text-lg text-ink">{box === 'sent' ? t('noReport') : t('inboxQuiet')}</p>
+                <p className="mt-1 text-sm text-ink/60">{t('pickReport')}</p>
               </div>
             </div>
           )}
@@ -334,24 +337,24 @@ export function ReportsDesk({ officeId, people, onClose }: { officeId: string; p
 
 function SideButton({ label, count, active, onClick }: { label: string; count?: number; active: boolean; onClick: () => void }) {
   return (
-    <button type="button" onClick={onClick} className={`flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm font-bold ${active ? 'bg-paper text-ink shadow-pop' : 'text-ink hover:bg-paper/70'}`}>
+    <button type="button" onClick={onClick} className={`flex w-full items-center justify-between rounded-xl px-3 py-2 text-start text-sm font-bold ${active ? 'bg-paper text-ink shadow-pop' : 'text-ink hover:bg-paper/70'}`}>
       <span>{label}</span>
       {count ? <span className="rounded-full bg-lift px-1.5 text-[11px] font-bold text-paper">{count}</span> : null}
     </button>
   )
 }
 
-function names(people: { name: string }[]) {
-  if (people.length === 0) return 'no one'
+function names(people: { name: string }[], empty: string) {
+  if (people.length === 0) return empty
   return people.map((person) => person.name).join(', ')
 }
 
 function readNote(people: { read: boolean }[]) {
   const seen = people.filter((person) => person.read).length
   if (people.length === 0) return ''
-  if (seen === people.length) return ' · Read'
-  if (seen === 0) return ' · Unread'
-  return ` · Read by ${seen} of ${people.length}`
+  if (seen === people.length) return ` · ${text('read')}`
+  if (seen === 0) return ` · ${text('unread')}`
+  return ` · ${text('readBy', { seen, total: people.length })}`
 }
 
 async function uploadAttachment(officeId: string, reportId: string, file: File) {
@@ -360,7 +363,7 @@ async function uploadAttachment(officeId: string, reportId: string, file: File) 
   body.set('reportId', reportId)
   const response = await fetch(`/api/offices/${officeId}/files`, { method: 'POST', body, credentials: 'include' })
   if (!response.ok) {
-    let message = 'The file could not be attached.'
+    let message = text('attachFail')
     try {
       const payload = (await response.json()) as { message?: string | string[] }
       if (Array.isArray(payload.message)) message = payload.message.join(' ')
@@ -385,8 +388,8 @@ async function downloadAttachment(officeId: string, file: { id: string; name: st
   URL.revokeObjectURL(url)
 }
 
-function formatWhen(value: string) {
+function formatWhen(value: string, locale: string) {
   const date = new Date(value)
-  if (date.toDateString() === new Date().toDateString()) return date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
-  return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+  if (date.toDateString() === new Date().toDateString()) return date.toLocaleTimeString(locale, { hour: 'numeric', minute: '2-digit' })
+  return date.toLocaleDateString(locale, { month: 'short', day: 'numeric' })
 }

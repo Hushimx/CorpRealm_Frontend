@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type MouseEvent as ReactMouseEvent } from 'react'
+import { useLocale, useT, type CopyKey } from '../i18n'
 import { ApiError, api } from '../net/api'
 
 type Folder = { id: string; name: string }
@@ -19,6 +20,8 @@ type Menu =
   | { kind: 'folder'; id: string; x: number; y: number; align: 'start' | 'end' }
 
 export function FilesDesk({ officeId, onClose }: { officeId: string; onClose: () => void }) {
+  const t = useT()
+  const locale = useLocale()
   const [folders, setFolders] = useState<Folder[]>([])
   const [files, setFiles] = useState<OfficeFile[]>([])
   const [folderId, setFolderId] = useState<string | null>(null)
@@ -49,7 +52,7 @@ export function FilesDesk({ officeId, onClose }: { officeId: string; onClose: ()
           setError('')
         })
         .catch((reason: unknown) => {
-          if (!closed) setError(reason instanceof ApiError ? reason.message : 'Files could not be loaded.')
+          if (!closed) setError(reason instanceof ApiError ? reason.message : t('filesFail'))
         })
     }
     load()
@@ -69,7 +72,7 @@ export function FilesDesk({ officeId, onClose }: { officeId: string; onClose: ()
       setFolderId(created.id)
       setError('')
     } catch (reason) {
-      setError(reason instanceof ApiError ? reason.message : 'The folder could not be created.')
+      setError(reason instanceof ApiError ? reason.message : t('folderFail'))
     }
   }
 
@@ -90,7 +93,7 @@ export function FilesDesk({ officeId, onClose }: { officeId: string; onClose: ()
       }
       setError('')
     } catch (reason) {
-      setError(reason instanceof ApiError ? reason.message : 'The upload did not finish.')
+      setError(reason instanceof ApiError ? reason.message : t('uploadFail'))
     } finally {
       setBusy(false)
       setDragging(false)
@@ -110,7 +113,7 @@ export function FilesDesk({ officeId, onClose }: { officeId: string; onClose: ()
       link.click()
       URL.revokeObjectURL(url)
     } catch (reason) {
-      setError(reason instanceof ApiError ? reason.message : 'The download did not finish.')
+      setError(reason instanceof ApiError ? reason.message : t('downloadFail'))
     }
   }
 
@@ -120,7 +123,7 @@ export function FilesDesk({ officeId, onClose }: { officeId: string; onClose: ()
       await api(`/offices/${officeId}/files/${file.id}`, { method: 'DELETE' })
       setFiles((current) => current.filter((item) => item.id !== file.id))
     } catch (reason) {
-      setError(reason instanceof ApiError ? reason.message : 'The file could not be deleted.')
+      setError(reason instanceof ApiError ? reason.message : t('fileDeleteFail'))
     }
   }
 
@@ -130,7 +133,7 @@ export function FilesDesk({ officeId, onClose }: { officeId: string; onClose: ()
       await api(`/offices/${officeId}/files/${file.id}`, { method: 'PATCH', body: JSON.stringify({ folderId: nextFolder || null }) })
       setFiles((current) => current.filter((item) => item.id !== file.id))
     } catch (reason) {
-      setError(reason instanceof ApiError ? reason.message : 'The file could not be moved.')
+      setError(reason instanceof ApiError ? reason.message : t('fileMoveFail'))
     }
   }
 
@@ -141,7 +144,7 @@ export function FilesDesk({ officeId, onClose }: { officeId: string; onClose: ()
       setFolders((current) => current.filter((item) => item.id !== target.id))
       if (folderId === target.id) setFolderId(null)
     } catch (reason) {
-      setError(reason instanceof ApiError ? reason.message : 'The folder could not be deleted.')
+      setError(reason instanceof ApiError ? reason.message : t('folderDeleteFail'))
     }
   }
 
@@ -156,11 +159,11 @@ export function FilesDesk({ officeId, onClose }: { officeId: string; onClose: ()
   const empty = shownFolders.length === 0 && shownFiles.length === 0
 
   return (
-    <section className="absolute top-16 right-3 bottom-4 left-28 z-10 flex overflow-hidden rounded-card bg-paper text-ink shadow-card sm:right-4 sm:left-32" onMouseDown={() => setMenu(null)}>
-      <aside className="hidden w-52 shrink-0 flex-col border-r border-line bg-mist sm:flex">
-        <p className="px-4 pt-4 text-xs font-bold tracking-[0.16em] text-ink/50 uppercase">Files</p>
-        <nav className="mt-3 min-h-0 flex-1 space-y-1 overflow-y-auto px-2 pb-3" aria-label="Folders">
-          <SideItem active={folderId === null} label="Office files" onClick={() => setFolderId(null)} />
+    <section className="absolute top-16 end-3 bottom-4 start-32 z-10 flex overflow-hidden rounded-card bg-paper text-ink shadow-card sm:end-4 sm:start-36" onMouseDown={() => setMenu(null)}>
+      <aside className="hidden w-52 shrink-0 flex-col border-e border-line bg-mist sm:flex">
+        <p className="px-4 pt-4 text-xs font-bold tracking-[0.16em] text-ink/50 uppercase">{t('files')}</p>
+        <nav className="mt-3 min-h-0 flex-1 space-y-1 overflow-y-auto px-2 pb-3" aria-label={t('folders')}>
+          <SideItem active={folderId === null} label={t('officeFiles')} onClick={() => setFolderId(null)} />
           {folders.map((item) => (
             <SideItem
               key={item.id}
@@ -178,15 +181,15 @@ export function FilesDesk({ officeId, onClose }: { officeId: string; onClose: ()
             <div className="min-w-0">
               <p className="text-xs text-ink/50">
                 <button type="button" onClick={() => setFolderId(null)} className="font-bold text-ink/70 hover:text-ink">
-                  Office files
+                  {t('officeFiles')}
                 </button>
                 {folder ? <span className="text-ink"> / {folder.name}</span> : null}
               </p>
-              <h2 className="truncate font-black text-2xl leading-none text-ink">{folder ? folder.name : 'Office files'}</h2>
-              <p className="mt-1 text-xs text-ink/55">Shared with this office. Up to 12 MB each.</p>
+              <h2 className="truncate font-black text-2xl leading-none text-ink">{folder ? folder.name : t('officeFiles')}</h2>
+              <p className="mt-1 text-xs text-ink/55">{t('filesHint')}</p>
             </div>
             <button type="button" onClick={onClose} className="shrink-0 rounded-full bg-frost px-3 py-1.5 text-xs font-bold text-ink">
-              Close
+              {t('close')}
             </button>
           </div>
           <div className="mt-3 flex flex-wrap items-center gap-2">
@@ -195,20 +198,20 @@ export function FilesDesk({ officeId, onClose }: { officeId: string; onClose: ()
             <input
               value={query}
               onChange={(event) => setQuery(event.target.value)}
-              placeholder="Search in Files"
+              placeholder={t('searchFiles')}
               className="min-w-0 flex-1 bg-transparent text-sm text-ink outline-none placeholder:text-ink/40"
             />
           </label>
-          <div className="flex rounded-full bg-mist p-0.5" role="group" aria-label="Layout">
+          <div className="flex rounded-full bg-mist p-0.5" role="group" aria-label={t('layout')}>
             <button type="button" aria-pressed={view === 'list'} onClick={() => setView('list')} className={`rounded-full px-2.5 py-1 text-xs font-bold ${view === 'list' ? 'bg-paper text-ink shadow-pop' : 'text-ink/60'}`}>
-              List
+              {t('list')}
             </button>
             <button type="button" aria-pressed={view === 'grid'} onClick={() => setView('grid')} className={`rounded-full px-2.5 py-1 text-xs font-bold ${view === 'grid' ? 'bg-paper text-ink shadow-pop' : 'text-ink/60'}`}>
-              Grid
+              {t('grid')}
             </button>
           </div>
           <button type="button" onClick={(event) => openMenu(event, { kind: 'new' })} className="rounded-full bg-ink px-3 py-1.5 text-xs font-bold text-paper">
-            {busy ? 'Uploading…' : 'New'}
+            {busy ? t('uploading') : t('newItem')}
           </button>
           </div>
           <input
@@ -225,7 +228,7 @@ export function FilesDesk({ officeId, onClose }: { officeId: string; onClose: ()
         </header>
         <div className="flex gap-2 overflow-x-auto border-b border-line px-3 py-2 sm:hidden">
           <button type="button" onClick={() => setFolderId(null)} className={`shrink-0 rounded-full px-3 py-1 text-xs font-bold ${folderId ? 'bg-frost text-ink' : 'bg-ink text-paper'}`}>
-            Office files
+            {t('officeFiles')}
           </button>
           {folders.map((item) => (
             <button key={item.id} type="button" onClick={() => setFolderId(item.id)} className={`max-w-36 shrink-0 truncate rounded-full px-3 py-1 text-xs font-bold ${folderId === item.id ? 'bg-ink text-paper' : 'bg-frost text-ink'}`}>
@@ -247,18 +250,18 @@ export function FilesDesk({ officeId, onClose }: { officeId: string; onClose: ()
             void upload(event.dataTransfer.files)
           }}
         >
-          {dragging ? <p className="mb-3 rounded-2xl border border-dashed border-lift bg-paper px-4 py-3 text-center text-sm font-bold text-ink">Drop to upload into {folder ? folder.name : 'Office files'}</p> : null}
+          {dragging ? <p className="mb-3 rounded-2xl border border-dashed border-lift bg-paper px-4 py-3 text-center text-sm font-bold text-ink">{t('dropUpload', { name: folder ? folder.name : t('officeFiles') })}</p> : null}
           {shownFolders.length > 0 ? (
             <section>
-              <h3 className="text-sm font-bold text-ink">Folders</h3>
+              <h3 className="text-sm font-bold text-ink">{t('folders')}</h3>
               <div className="mt-2 grid grid-cols-2 gap-2 lg:grid-cols-3">
                 {shownFolders.map((item) => (
                   <div key={item.id} className="flex items-center gap-2 rounded-2xl bg-mist px-3 py-3 text-ink hover:bg-frost">
-                    <button type="button" onClick={() => setFolderId(item.id)} className="flex min-w-0 flex-1 items-center gap-2 text-left">
+                    <button type="button" onClick={() => setFolderId(item.id)} className="flex min-w-0 flex-1 items-center gap-2 text-start">
                       <FolderMark />
                       <span className="truncate text-sm font-bold">{item.name}</span>
                     </button>
-                    <button type="button" aria-label={`Folder actions for ${item.name}`} onClick={(event) => openMenu(event, { kind: 'folder', id: item.id })} className="grid h-7 w-7 place-items-center rounded-full text-ink hover:bg-paper">
+                    <button type="button" aria-label={t('folderActions', { name: item.name })} onClick={(event) => openMenu(event, { kind: 'folder', id: item.id })} className="grid h-7 w-7 place-items-center rounded-full text-ink hover:bg-paper">
                       ···
                     </button>
                   </div>
@@ -268,12 +271,12 @@ export function FilesDesk({ officeId, onClose }: { officeId: string; onClose: ()
           ) : null}
           {shownFiles.length > 0 ? (
             <section className={shownFolders.length > 0 ? 'mt-6' : ''}>
-              <h3 className="text-sm font-bold text-ink">Files</h3>
+              <h3 className="text-sm font-bold text-ink">{t('files')}</h3>
               {view === 'grid' ? (
                 <div className="mt-2 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
                   {shownFiles.map((file) => (
                     <article key={file.id} className={`overflow-hidden rounded-2xl border text-ink ${selected === file.id ? 'border-lift bg-frost' : 'border-line bg-paper'}`}>
-                      <button type="button" onClick={() => setSelected(file.id)} onDoubleClick={() => void download(file)} className="block w-full bg-mist text-left">
+                      <button type="button" onClick={() => setSelected(file.id)} onDoubleClick={() => void download(file)} className="block w-full bg-mist text-start">
                         <FilePreview officeId={officeId} file={file} large />
                       </button>
                       <div className="flex items-start gap-2 px-3 py-2">
@@ -281,7 +284,7 @@ export function FilesDesk({ officeId, onClose }: { officeId: string; onClose: ()
                           <p className="truncate text-sm font-bold text-ink">{file.name}</p>
                           <p className="truncate text-[11px] text-ink/55">{formatSize(file.size)} · {file.authorName}</p>
                         </div>
-                        <button type="button" aria-label={`Actions for ${file.name}`} onClick={(event) => openMenu(event, { kind: 'file', id: file.id })} className="text-sm font-bold text-ink">
+                        <button type="button" aria-label={t('fileActions', { name: file.name })} onClick={(event) => openMenu(event, { kind: 'file', id: file.id })} className="text-sm font-bold text-ink">
                           ···
                         </button>
                       </div>
@@ -291,22 +294,22 @@ export function FilesDesk({ officeId, onClose }: { officeId: string; onClose: ()
               ) : (
                 <div className="mt-2 overflow-hidden rounded-2xl border border-line">
                   <div className="grid grid-cols-[minmax(0,1fr)_3.5rem_1.75rem] gap-3 bg-mist px-3 py-2 text-[11px] font-bold text-ink/50 uppercase md:grid-cols-[minmax(0,1fr)_6rem_3.5rem_1.75rem] lg:grid-cols-[minmax(0,1fr)_7rem_6rem_3.5rem_1.75rem]">
-                    <span>Name</span>
-                    <span className="hidden lg:block">Owner</span>
-                    <span className="hidden md:block">Modified</span>
-                    <span>Size</span>
+                    <span>{t('name')}</span>
+                    <span className="hidden lg:block">{t('owner')}</span>
+                    <span className="hidden md:block">{t('modified')}</span>
+                    <span>{t('size')}</span>
                     <span />
                   </div>
                   {shownFiles.map((file) => (
                     <div key={file.id} className={`grid grid-cols-[minmax(0,1fr)_3.5rem_1.75rem] items-center gap-3 border-t border-line px-3 py-2 md:grid-cols-[minmax(0,1fr)_6rem_3.5rem_1.75rem] lg:grid-cols-[minmax(0,1fr)_7rem_6rem_3.5rem_1.75rem] ${selected === file.id ? 'bg-frost' : 'hover:bg-mist'}`}>
-                      <button type="button" onClick={() => setSelected(file.id)} onDoubleClick={() => void download(file)} className="flex min-w-0 items-center gap-2 text-left">
+                      <button type="button" onClick={() => setSelected(file.id)} onDoubleClick={() => void download(file)} className="flex min-w-0 items-center gap-2 text-start">
                         <FilePreview officeId={officeId} file={file} />
                         <span className="truncate text-sm font-medium text-ink">{file.name}</span>
                       </button>
                       <span className="hidden truncate text-xs text-ink/70 lg:block">{file.authorName}</span>
-                      <span className="hidden truncate text-xs text-ink/70 md:block">{formatWhen(file.createdAt)}</span>
+                      <span className="hidden truncate text-xs text-ink/70 md:block">{formatWhen(file.createdAt, locale)}</span>
                       <span className="truncate text-xs text-ink/70">{formatSize(file.size)}</span>
-                      <button type="button" aria-label={`Actions for ${file.name}`} onClick={(event) => openMenu(event, { kind: 'file', id: file.id })} className="text-sm font-bold text-ink">
+                      <button type="button" aria-label={t('fileActions', { name: file.name })} onClick={(event) => openMenu(event, { kind: 'file', id: file.id })} className="text-sm font-bold text-ink">
                         ···
                       </button>
                     </div>
@@ -321,8 +324,8 @@ export function FilesDesk({ officeId, onClose }: { officeId: string; onClose: ()
                 <span className="mx-auto grid h-16 w-16 place-items-center rounded-2xl bg-paper">
                   <FolderMark large />
                 </span>
-                <p className="mt-4 font-bold text-xl text-ink">{needle ? 'Nothing matches that search.' : 'This folder is empty'}</p>
-                <p className="mt-1 text-sm text-ink/60">{needle ? 'Try another name.' : 'Drop files here, or use New to upload or make a folder.'}</p>
+                <p className="mt-4 font-bold text-xl text-ink">{needle ? t('noSearch') : t('emptyFolder')}</p>
+                <p className="mt-1 text-sm text-ink/60">{needle ? t('tryName') : t('dropHint')}</p>
               </div>
             </div>
           ) : null}
@@ -344,20 +347,20 @@ export function FilesDesk({ officeId, onClose }: { officeId: string; onClose: ()
               void createFolder()
             }}
           >
-            <p className="text-xs font-bold tracking-[0.16em] text-ink/50 uppercase">New folder</p>
+            <p className="text-xs font-bold tracking-[0.16em] text-ink/50 uppercase">{t('newFolder')}</p>
             <input
               autoFocus
               value={folderName}
               onChange={(event) => setFolderName(event.target.value)}
-              placeholder="Folder name"
+              placeholder={t('folderName')}
               className="mt-3 w-full rounded-2xl border border-ink/15 bg-paper px-3 py-2 text-sm text-ink outline-none placeholder:text-ink/40 focus-visible:border-lift"
             />
             <div className="mt-3 flex justify-end gap-2">
               <button type="button" onClick={() => setCreating(false)} className="rounded-full bg-frost px-3 py-1.5 text-xs font-bold text-ink">
-                Cancel
+                {t('cancel')}
               </button>
               <button type="submit" className="rounded-full bg-ink px-3 py-1.5 text-xs font-bold text-paper">
-                Create
+                {t('create')}
               </button>
             </div>
           </form>
@@ -370,12 +373,12 @@ export function FilesDesk({ officeId, onClose }: { officeId: string; onClose: ()
 function SideItem({ active, label, onClick, onMore }: { active: boolean; label: string; onClick: () => void; onMore?: (event: ReactMouseEvent<HTMLButtonElement>) => void }) {
   return (
     <div className={`flex items-center rounded-xl ${active ? 'bg-paper text-ink shadow-pop' : 'text-ink hover:bg-paper/70'}`}>
-      <button type="button" onClick={onClick} className="flex min-w-0 flex-1 items-center gap-2 px-2 py-2 text-left">
+      <button type="button" onClick={onClick} className="flex min-w-0 flex-1 items-center gap-2 px-2 py-2 text-start">
         <FolderMark small />
         <span className="truncate text-sm font-bold">{label}</span>
       </button>
       {onMore ? (
-        <button type="button" aria-label={`Actions for ${label}`} onClick={onMore} className="mr-1 grid h-7 w-7 place-items-center rounded-full text-xs font-bold text-ink">
+        <button type="button" aria-label={label} onClick={onMore} className="me-1 grid h-7 w-7 place-items-center rounded-full text-xs font-bold text-ink">
           ···
         </button>
       ) : null}
@@ -406,6 +409,7 @@ function DriveMenu({
   onDeleteFolder: (folder: Folder) => void
   onOpenFolder: (id: string) => void
 }) {
+  const t = useT()
   const file = menu.kind === 'file' ? files.find((item) => item.id === menu.id) : undefined
   const folder = menu.kind === 'folder' ? folders.find((item) => item.id === menu.id) : undefined
   return (
@@ -416,33 +420,33 @@ function DriveMenu({
     >
       {menu.kind === 'new' ? (
         <>
-          <MenuButton label="Upload files" onClick={onUpload} />
-          <MenuButton label="New folder" onClick={onNewFolder} />
+          <MenuButton label={t('uploadFiles')} onClick={onUpload} />
+          <MenuButton label={t('newFolder')} onClick={onNewFolder} />
         </>
       ) : null}
       {file ? (
         <>
-          <MenuButton label="Download" onClick={() => onDownload(file)} />
+          <MenuButton label={t('download')} onClick={() => onDownload(file)} />
           <label className="block px-2 py-1.5 text-xs text-ink/60">
-            Move to
+            {t('moveTo')}
             <select
               value={file.folderId ?? ''}
               onChange={(event) => onMove(file, event.target.value)}
               className="mt-1 w-full rounded-xl border border-ink/15 bg-paper px-2 py-1.5 text-sm text-ink outline-none"
             >
-              <option value="">Office files</option>
+              <option value="">{t('officeFiles')}</option>
               {folders.map((item) => (
                 <option key={item.id} value={item.id}>{item.name}</option>
               ))}
             </select>
           </label>
-          {file.canDelete ? <MenuButton label="Delete" danger onClick={() => onDeleteFile(file)} /> : null}
+          {file.canDelete ? <MenuButton label={t('delete')} danger onClick={() => onDeleteFile(file)} /> : null}
         </>
       ) : null}
       {folder ? (
         <>
-          <MenuButton label="Open" onClick={() => onOpenFolder(folder.id)} />
-          <MenuButton label="Delete folder" danger onClick={() => onDeleteFolder(folder)} />
+          <MenuButton label={t('open')} onClick={() => onOpenFolder(folder.id)} />
+          <MenuButton label={t('deleteFolder')} danger onClick={() => onDeleteFolder(folder)} />
         </>
       ) : null}
     </div>
@@ -451,18 +455,19 @@ function DriveMenu({
 
 function MenuButton({ label, onClick, danger }: { label: string; onClick: () => void; danger?: boolean }) {
   return (
-    <button type="button" onClick={onClick} className={`block w-full rounded-xl px-3 py-2 text-left text-sm font-medium hover:bg-mist ${danger ? 'text-danger' : 'text-ink'}`}>
+    <button type="button" onClick={onClick} className={`block w-full rounded-xl px-3 py-2 text-start text-sm font-medium hover:bg-mist ${danger ? 'text-danger' : 'text-ink'}`}>
       {label}
     </button>
   )
 }
 
 function FilePreview({ officeId, file, large }: { officeId: string; file: OfficeFile; large?: boolean }) {
+  const t = useT()
   const [broken, setBroken] = useState(false)
   if (file.mime.startsWith('image/') && !broken) {
     return <img src={`/api/offices/${officeId}/files/${file.id}?inline=1`} alt="" onError={() => setBroken(true)} className={large ? 'h-28 w-full object-cover' : 'h-8 w-8 rounded-lg object-cover'} />
   }
-  const kind = kindOf(file.mime)
+  const kind = kindOf(file.mime, t)
   return (
     <span className={`grid place-items-center font-bold ${large ? 'h-28 w-full text-sm' : 'h-8 w-8 shrink-0 rounded-lg text-[9px]'} ${kind.light ? 'text-ink' : 'text-paper'}`} style={{ background: kind.color }}>
       {large ? kind.label : kind.short}
@@ -506,17 +511,17 @@ function formatSize(bytes: number) {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
 }
 
-function formatWhen(value: string) {
-  return new Date(value).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+function formatWhen(value: string, locale: string) {
+  return new Date(value).toLocaleDateString(locale, { month: 'short', day: 'numeric' })
 }
 
-function kindOf(mime: string) {
+function kindOf(mime: string, t: (key: CopyKey) => string) {
   if (mime.includes('pdf')) return { label: 'PDF', short: 'PDF', color: '#c0392b', light: false }
   if (mime.includes('zip')) return { label: 'ZIP', short: 'ZIP', color: '#14161c', light: false }
-  if (mime.startsWith('video/')) return { label: 'VIDEO', short: 'VID', color: '#6d4aff', light: false }
-  if (mime.startsWith('audio/')) return { label: 'AUDIO', short: 'AUD', color: '#e07a2f', light: false }
-  if (mime.includes('sheet') || mime.includes('excel') || mime.includes('csv')) return { label: 'SHEET', short: 'XLS', color: '#2f9e6b', light: false }
-  if (mime.includes('word') || mime.startsWith('text/')) return { label: 'DOC', short: 'DOC', color: '#2765ed', light: false }
-  if (mime.startsWith('image/')) return { label: 'IMG', short: 'IMG', color: '#8fb8ff', light: true }
-  return { label: 'FILE', short: 'FILE', color: '#e6eeff', light: true }
+  if (mime.startsWith('video/')) return { label: t('video'), short: 'VID', color: '#6d4aff', light: false }
+  if (mime.startsWith('audio/')) return { label: t('audio'), short: 'AUD', color: '#e07a2f', light: false }
+  if (mime.includes('sheet') || mime.includes('excel') || mime.includes('csv')) return { label: t('sheet'), short: 'XLS', color: '#2f9e6b', light: false }
+  if (mime.includes('word') || mime.startsWith('text/')) return { label: t('doc'), short: 'DOC', color: '#2765ed', light: false }
+  if (mime.startsWith('image/')) return { label: t('image'), short: 'IMG', color: '#8fb8ff', light: true }
+  return { label: t('fileWord'), short: 'FILE', color: '#e6eeff', light: true }
 }

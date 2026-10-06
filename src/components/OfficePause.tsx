@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router'
+import { LanguageSwitch, useT } from '../i18n'
 import type { OfficeMedia } from '../net/media'
 import { useSession } from '../net/session'
 import { usePlaySettings } from '../store/play'
@@ -34,6 +35,7 @@ export function OfficePause({
   const setMicId = usePlaySettings((state) => state.setMicId)
   const setHeadId = usePlaySettings((state) => state.setHeadId)
   const local = useLocalDevices()
+  const t = useT()
 
   useEffect(() => {
     if (ready) void refreshDevices()
@@ -42,44 +44,50 @@ export function OfficePause({
   return (
     <div className="pointer-events-auto absolute inset-0 z-40 grid place-items-center bg-ink/35 p-4">
       <section className="max-h-[min(42rem,calc(100svh-2rem))] w-full max-w-md overflow-y-auto rounded-card bg-paper p-4 text-ink shadow-card">
-        <p className="text-xs font-bold tracking-[0.16em] text-ink/50 uppercase">Paused</p>
-        <h2 className="mt-1 font-black text-3xl leading-none text-ink">Settings</h2>
+        <p className="text-xs font-bold tracking-[0.16em] text-ink/50 uppercase">{t('paused')}</p>
+        <h2 className="mt-1 font-black text-3xl leading-none text-ink">{t('settings')}</h2>
+        <div className="mt-4">
+          <p className="text-xs font-bold tracking-[0.16em] text-ink/50 uppercase">{t('language')}</p>
+          <div className="mt-2">
+            <LanguageSwitch />
+          </div>
+        </div>
         <div className="mt-4 flex flex-wrap gap-2">
           {overview ? (
             <button type="button" onClick={onWalkInside} className="rounded-full bg-ink px-4 py-2 text-sm font-bold text-paper">
-              Walk inside
+              {t('walkInside')}
             </button>
           ) : (
             <button type="button" onClick={onResume} className="rounded-full bg-ink px-4 py-2 text-sm font-bold text-paper">
-              Resume
+              {t('resume')}
             </button>
           )}
           {overview ? null : (
             <button type="button" onClick={onOverview} className="rounded-full bg-frost px-4 py-2 text-sm font-bold text-ink">
-              Office overview
+              {t('officeOverview')}
             </button>
           )}
         </div>
 
         <div className="mt-5 space-y-3">
-          <Slider label="Field of view" min={40} max={90} step={1} value={fov} display={`${Math.round(fov)}°`} onChange={setFov} />
-          <Slider label="Mouse sensitivity" min={0.25} max={2.5} step={0.05} value={sensitivity} display={`${Math.round(sensitivity * 100)}%`} onChange={setSensitivity} />
-          <Slider label="Voice volume" min={0} max={1} step={0.05} value={voice} display={`${Math.round(voice * 100)}%`} onChange={setVoice} />
-          <Slider label="Output volume" min={0} max={1} step={0.05} value={output} display={`${Math.round(output * 100)}%`} onChange={setOutput} />
+          <Slider label={t('fov')} min={40} max={90} step={1} value={fov} display={`${Math.round(fov)}°`} onChange={setFov} />
+          <Slider label={t('sensitivity')} min={0.25} max={2.5} step={0.05} value={sensitivity} display={`${Math.round(sensitivity * 100)}%`} onChange={setSensitivity} />
+          <Slider label={t('voiceVolume')} min={0} max={1} step={0.05} value={voice} display={`${Math.round(voice * 100)}%`} onChange={setVoice} />
+          <Slider label={t('outputVolume')} min={0} max={1} step={0.05} value={output} display={`${Math.round(output * 100)}%`} onChange={setOutput} />
         </div>
 
         <div className="mt-5">
-          <p className="text-xs font-bold tracking-[0.16em] text-ink/50 uppercase">Microphone</p>
+          <p className="text-xs font-bold tracking-[0.16em] text-ink/50 uppercase">{t('microphone')}</p>
           {ready ? (
             <button type="button" onClick={() => void media.toggleMic()} className={`mt-2 rounded-full px-3 py-1.5 text-xs font-bold ${media.mic ? 'bg-frost text-ink' : 'bg-ink text-paper'}`}>
-              {media.mic ? 'Mute microphone' : 'Unmute microphone'}
+              {media.mic ? t('muteMic') : t('unmuteMic')}
             </button>
           ) : null}
           <DeviceSelect
-            label="Input"
+            label={t('input')}
             devices={media.mics.length ? media.mics : local.mics}
             selected={media.micId || savedMic}
-            empty={local.asked ? 'No microphones found.' : 'Allow the microphone to list inputs.'}
+            empty={local.asked ? t('noMics') : t('allowMicList')}
             onPick={(id) => {
               setMicId(id)
               if (ready) void media.chooseMic(id)
@@ -87,30 +95,30 @@ export function OfficePause({
           />
           {!ready && !local.asked ? (
             <button type="button" onClick={() => void local.allow()} className="mt-2 rounded-full bg-frost px-3 py-1.5 text-xs font-bold text-ink">
-              Allow microphone
+              {t('allowMic')}
             </button>
           ) : null}
         </div>
 
         <div className="mt-5">
-          <p className="text-xs font-bold tracking-[0.16em] text-ink/50 uppercase">Headphones</p>
+          <p className="text-xs font-bold tracking-[0.16em] text-ink/50 uppercase">{t('headphones')}</p>
           {ready ? (
             <div className="mt-2 flex flex-wrap gap-2">
               <button type="button" onClick={() => void media.toggleDeaf()} className={`rounded-full px-3 py-1.5 text-xs font-bold ${media.deaf ? 'bg-ink text-paper' : 'bg-frost text-ink'}`}>
-                {media.deaf ? 'Turn headphones on' : 'Deafen'}
+                {media.deaf ? t('headphonesOn') : t('deafen')}
               </button>
               {media.hearing ? null : (
                 <button type="button" onClick={() => void media.unlock()} className="rounded-full bg-frost px-3 py-1.5 text-xs font-bold text-ink">
-                  Turn sound on
+                  {t('soundOn')}
                 </button>
               )}
             </div>
           ) : null}
           <DeviceSelect
-            label="Output"
+            label={t('output')}
             devices={media.heads.length ? media.heads : local.heads}
             selected={media.headId || savedHead}
-            empty="This browser picks the headphones for you."
+            empty={t('browserHeadphones')}
             onPick={(id) => {
               setHeadId(id)
               if (ready) void media.chooseHead(id)
@@ -121,26 +129,30 @@ export function OfficePause({
         </div>
 
         <div className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-ink/10 pt-3">
-          {user ? <p className="w-full text-xs text-ink/70">Signed in as <span className="font-medium text-ink">{user.name.trim() || user.email}</span></p> : null}
+          {user ? <p className="w-full text-xs text-ink/70">{t('signedInAs')} <span className="font-medium text-ink">{user.name.trim() || user.email}</span></p> : null}
+          <Link to="/desktop" className="text-sm font-medium text-lift underline decoration-lift/40 underline-offset-2">
+            {t('openDesktop')}
+          </Link>
           <Link to="/avatar" className="text-sm font-medium text-lift underline decoration-lift/40 underline-offset-2">
-            Change avatar
+            {t('changeAvatar')}
           </Link>
           <Link to="/build" className="text-sm font-medium text-lift underline decoration-lift/40 underline-offset-2">
-            Build an office
+            {t('buildOffice')}
           </Link>
           {user ? (
             <button type="button" onClick={() => void logout()} className="text-sm font-medium text-ink">
-              Log out
+              {t('logOut')}
             </button>
           ) : null}
         </div>
-        <p className="mt-3 text-xs text-ink/55">Esc closes this menu.</p>
+        <p className="mt-3 text-xs text-ink/55">{t('escCloses')}</p>
       </section>
     </div>
   )
 }
 
 function useLocalDevices() {
+  const t = useT()
   const [mics, setMics] = useState<{ id: string; label: string }[]>([])
   const [heads, setHeads] = useState<{ id: string; label: string }[]>([])
   const [asked, setAsked] = useState(false)
@@ -156,11 +168,11 @@ function useLocalDevices() {
       const devices = await navigator.mediaDevices.enumerateDevices()
       const inputs = devices.filter((device) => device.kind === 'audioinput' && device.deviceId)
       const outputs = devices.filter((device) => device.kind === 'audiooutput' && device.deviceId)
-      setMics(inputs.map((device, index) => ({ id: device.deviceId, label: device.label.trim() || `Microphone ${index + 1}` })))
-      setHeads(outputs.map((device, index) => ({ id: device.deviceId, label: device.label.trim() || `Headphones ${index + 1}` })))
+      setMics(inputs.map((device, index) => ({ id: device.deviceId, label: device.label.trim() || t('micN', { n: index + 1 }) })))
+      setHeads(outputs.map((device, index) => ({ id: device.deviceId, label: device.label.trim() || t('headphonesN', { n: index + 1 }) })))
       setError('')
     } catch {
-      setError('The microphone was blocked.')
+      setError(t('micBlocked'))
     }
   }
 
@@ -169,7 +181,7 @@ function useLocalDevices() {
     const refresh = () => void load(false)
     navigator.mediaDevices?.addEventListener('devicechange', refresh)
     return () => navigator.mediaDevices?.removeEventListener('devicechange', refresh)
-  }, [])
+  }, [t])
 
   return { mics, heads, asked, error, allow: () => load(true) }
 }

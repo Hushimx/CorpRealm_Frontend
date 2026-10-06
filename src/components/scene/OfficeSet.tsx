@@ -4,6 +4,7 @@ import { useTexture } from '@react-three/drei'
 import { FURNITURE_SCALE } from '../../office/scale'
 import { useEffect, useState, useRef } from 'react'
 import { CanvasTexture, MeshStandardMaterial, SRGBColorSpace, type Material, type Group } from 'three'
+import { useT, type CopyKey } from '../../i18n'
 import { officeBoardAt } from '../../office/boards'
 import { BUILDING, PLAN_SCALE, plan, glassPosts, doors, props, rooms, walls, type Box, type Door, type Prop } from '../../office/layout'
 import { FeedPlane, useScreenPicture } from './feeds'
@@ -114,15 +115,15 @@ export function OfficeShell({ overview = false }: { overview?: boolean }) {
       <BrandPlate position={[plan(-9),2.6,plan(-17.87)]} width={2.5} />
       <BrandPlate position={[plan(8.8),2.55,plan(-17.87)]} width={3.2} />
       <BrandPlate position={[plan(3.8),2.15,plan(-8.13)]} width={4.2} rotationY={Math.PI} />
-      <Sign text="Focus" position={[-6.5,2.98,-10.88]} />
-      <Sign text="Collaboration" position={[2.1,2.98,-10.88]} />
-      <Sign text="Creative Studio" position={[11.1,2.98,-10.88]} />
-      <Sign text="Meeting" position={[3.55, 2.55, -7.72]} />
-      <Sign text="Private" position={[10.1, 2.55, -7.72]} />
-      <Sign text="Lounge" position={[3.3, 2.55, 7.72]} rotationY={Math.PI} />
-      <Sign text="Storage" position={[11.2, 2.55, 7.72]} rotationY={Math.PI} />
+      <Sign label="signFocus" position={[-6.5,2.98,-10.88]} />
+      <Sign label="signCollab" position={[2.1,2.98,-10.88]} />
+      <Sign label="signStudio" position={[11.1,2.98,-10.88]} />
+      <Sign label="signMeet" position={[3.55, 2.55, -7.72]} />
+      <Sign label="signPrivate" position={[10.1, 2.55, -7.72]} />
+      <Sign label="signLounge" position={[3.3, 2.55, 7.72]} rotationY={Math.PI} />
+      <Sign label="signStorage" position={[11.2, 2.55, 7.72]} rotationY={Math.PI} />
       <BrandPlate position={[plan(-9.5),2.15,plan(7.87)]} width={3.2} rotationY={Math.PI} />
-      <Sign text="Workspace" position={[-8.2, 2.55, -7.72]} />
+      <Sign label="signWork" position={[-8.2, 2.55, -7.72]} />
     </group>
   )
 }
@@ -743,7 +744,8 @@ function Screen({ x, z, rot }: { x: number; z: number; rot: number }) {
 }
 
 function Welcome({ x, z, rot }: { x: number; z: number; rot: number }) {
-  const map = useSign('WELCOME', '#ffffff', '#14161c')
+  const t = useT()
+  const map = useSign(t('signWelcome'), '#ffffff', '#14161c')
   return (
     <group position={[x, 0.05, z]} rotation={[0, rot, 0]}>
       <mesh rotation={[-Math.PI / 2, 0, 0]} material={mat.rug} receiveShadow>
@@ -803,19 +805,22 @@ function glassFace(x: number, z: number) {
 }
 
 function Sign({
-  text,
+  label,
   position,
   rotationY = 0,
 }: {
-  text: string
+  label: CopyKey
   position: [number, number, number]
   rotationY?: number
 }) {
+  const t = useT()
+  const text = t(label)
   const x = plan(position[0])
   const z = plan(position[2])
   const face = glassFace(x, z)
+  const arabic = /[\u0600-\u06FF]/.test(text)
   const height = 0.32
-  const width = Math.min(Math.max(1.2, text.length * 0.155), face ? Math.max(1.15, face.length - 0.46) : 2.35)
+  const width = Math.min(Math.max(1.2, text.length * (arabic ? 0.28 : 0.155)), face ? Math.max(1.15, face.length - 0.46) : 2.35)
   const map = useSign(text, '#000000', '#ffffff', width / height)
   if (!map) return null
   const placeX = face?.horizontal ? face.x : x
