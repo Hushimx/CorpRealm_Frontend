@@ -1,7 +1,7 @@
 import { doorsBlocked } from './doors'
 import { FURNITURE_FOOTPRINT } from './scale'
 
-export const PLAN_SCALE = 1.25
+export const PLAN_SCALE = 1.8
 export const plan = (value: number) => value * PLAN_SCALE
 
 const SOLID = 0.22

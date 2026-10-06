@@ -19,6 +19,13 @@ import { knownCopy, roomCopy, useT } from '../i18n'
 import { useSession } from '../net/session'
 import { useAvatarStore } from '../store/avatar'
 
+const mapPad = 1.6
+const mapMinX = Math.min(...rooms.map((room) => room.x - room.w / 2)) - mapPad
+const mapMinZ = Math.min(...rooms.map((room) => room.z - room.d / 2)) - mapPad
+const mapMaxX = Math.max(...rooms.map((room) => room.x + room.w / 2)) + mapPad
+const mapMaxZ = Math.max(...rooms.map((room) => room.z + room.d / 2)) + mapPad
+const mapW = mapMaxX - mapMinX
+const mapScale = mapW / 38
 const STUDIO_CHESS = props.flatMap((prop) => (prop.kind === 'chess' ? [{ id: `${prop.x},${prop.z}`, x: prop.x, z: prop.z }] : []))
 const STUDIO_XO = props.flatMap((prop) => (prop.kind === 'xo' ? [{ id: `${prop.x},${prop.z}`, x: prop.x, z: prop.z }] : []))
 
@@ -202,7 +209,7 @@ export function OfficePage() {
         <div className="absolute top-3 end-3 flex flex-col items-end gap-3 sm:top-4 sm:end-4">
           {!overview && room.livekit ? <VoiceRoster media={media} faces={{ ...(user ? { [user.id]: face } : {}), ...Object.fromEntries(room.others.map((person) => [person.userId, person.face])) }} /> : null}
         <aside className="pointer-events-auto rounded-card bg-paper p-2 text-ink shadow-card" dir="ltr">
-          <svg viewBox="-19 -25 38 38" className="h-36 w-48 sm:h-40 sm:w-56" role="img" aria-label={t('officeMap')}>
+          <svg viewBox={`${mapMinX} ${mapMinZ} ${mapW} ${mapMaxZ - mapMinZ}`} className="h-36 w-48 sm:h-40 sm:w-56" role="img" aria-label={t('officeMap')}>
             {rooms.map((room) => (
               <g key={room.id}>
                 <rect
@@ -212,21 +219,21 @@ export function OfficePage() {
                   height={room.d}
                   fill={room.id === presence.roomId ? '#e6eeff' : '#ffffff'}
                   stroke="#000000"
-                  strokeWidth={0.16}
+                  strokeWidth={0.16 * mapScale}
                 />
                 <text
                   x={room.x}
                   y={room.z}
                   textAnchor="middle"
                   dominantBaseline="middle"
-                  fontSize="1.15"
+                  fontSize={1.15 * mapScale}
                   fill="#000000"
                 >
                   {roomCopy(room.id, room.short, t)}
                 </text>
               </g>
             ))}
-            <circle cx={presence.x} cy={presence.z} r="0.55" fill="#2765ed" />
+            <circle cx={presence.x} cy={presence.z} r={0.55 * mapScale} fill="#2765ed" />
           </svg>
         </aside>
         </div>

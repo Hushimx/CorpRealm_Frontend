@@ -7,7 +7,7 @@ import { PCFShadowMap, PerspectiveCamera, type Group } from 'three'
 import type { AvatarParts } from '../../avatar/parts'
 import { clearHeld, holdKey, isHeld, queueJump, takeJump, takeSit } from '../../office/input'
 import { boardInReach } from '../../office/boards'
-import { blocked, plan, props, roomAt, wallBlocked } from '../../office/layout'
+import { BUILDING, PLAN_SCALE, blocked, plan, props, roomAt, wallBlocked } from '../../office/layout'
 import { OFFICE_DESKS, deskInFront } from '../../office/desks'
 import { glide, OFFICE_SEATS, resolveSeat, type Seat } from '../../office/seats'
 import { BlockyCharacter } from './BlockyAvatar'
@@ -18,6 +18,8 @@ import { OfficeShell } from './OfficeSet'
 import { usePlaySettings } from '../../store/play'
 
 const SPAWN = { x: plan(-4.2), z: plan(5.4) }
+const PULL = PLAN_SCALE / 1.25
+const OVERVIEW_CAMERA: [number, number, number] = [31 * PULL, 37 * PULL, BUILDING.z + 42.25 * PULL]
 
 export type Presence = {
   x: number
@@ -79,23 +81,23 @@ export function OfficeStage({
       className="h-full w-full touch-none"
       shadows={{ type: PCFShadowMap }}
       dpr={[1, 1.5]}
-      camera={{ position: overview ? [31, 37, 36] : [-3.15, 2.55, 12.1], fov: overview ? 42 : 52, near: 0.08, far: 120 }}
+      camera={{ position: overview ? OVERVIEW_CAMERA : [-3.15, 2.55, 12.1], fov: overview ? 42 : 52, near: 0.08, far: 240 }}
     >
       <color attach="background" args={['#e6eeff']} />
       <hemisphereLight args={['#ffffff', '#c4d8ff', 1.8]} />
       <ambientLight intensity={0.65} />
       <directionalLight
-        position={[-16, 22, 8]}
+        position={[-16 * PULL, 22 * PULL, 8 * PULL]}
         intensity={2.0}
         castShadow
         shadow-mapSize-width={2048}
         shadow-mapSize-height={2048}
         shadow-camera-near={2}
-        shadow-camera-far={90}
-        shadow-camera-left={-23}
-        shadow-camera-right={23}
-        shadow-camera-top={32}
-        shadow-camera-bottom={-32}
+        shadow-camera-far={90 * PULL}
+        shadow-camera-left={-23 * PULL}
+        shadow-camera-right={23 * PULL}
+        shadow-camera-top={32 * PULL}
+        shadow-camera-bottom={-32 * PULL}
         shadow-bias={-0.0002}
         shadow-normalBias={0.08}
       />
@@ -104,7 +106,7 @@ export function OfficeStage({
         <OfficeShell overview={overview} />
         <Staff />
         <RemotePeople people={others} />
-        {overview ? <OrbitControls makeDefault target={[0, 0, -6.25]} minDistance={18} maxDistance={75} maxPolarAngle={Math.PI / 2.15} /> : (
+        {overview ? <OrbitControls makeDefault target={[BUILDING.x, 0, BUILDING.z]} minDistance={18 * PULL} maxDistance={75 * PULL} maxPolarAngle={Math.PI / 2.15} /> : (
           <>
             <ViewFov />
             <Player parts={parts} onPresence={onPresence} paused={paused} place={place} onPlace={onPlace} onMotion={onMotion} others={others} />
