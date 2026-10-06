@@ -407,8 +407,9 @@ export function compileOffice(office: BuiltOffice) {
   return { walls, doors }
 }
 
-function hits(boxes: Box[], x: number, z: number, radius: number) {
+function hits(boxes: Box[], x: number, z: number, radius: number, feet = 0) {
   for (const box of boxes) {
+    if (box.top !== undefined && feet > box.top) continue
     if (Math.abs(x - box.x) <= box.w / 2 + radius && Math.abs(z - box.z) <= box.d / 2 + radius) return true
   }
   return false
@@ -450,8 +451,8 @@ export function collisionFor(office: BuiltOffice) {
   return {
     ...compiled,
     spawn,
-    blocked(x: number, z: number) {
-      return hits(solids, x, z, BODY)
+    blocked(x: number, z: number, feet = 0) {
+      return hits(solids, x, z, BODY, feet)
     },
     wallBlocked(x: number, z: number, radius = 0.22) {
       return hits(compiled.walls, x, z, radius)

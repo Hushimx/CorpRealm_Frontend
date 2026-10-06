@@ -9,7 +9,7 @@ import { BUILDING, PLAN_SCALE, plan, glassPosts, doors, props, rooms, walls, typ
 import { FeedPlane, useScreenPicture } from './feeds'
 import { TaskSurface } from './TaskSurface'
 
-const WALL = 3.5
+const WALL = 4.15
 
 const mat = {
   wall: shared('#e6eeff', 0.92),
@@ -99,7 +99,7 @@ export function OfficeShell({ overview = false }: { overview?: boolean }) {
       {walls.map((wall, index) => (
         <Wall key={index} box={wall} low={overview && (wall.z === plan(8) || wall.x === plan(13))} />
       ))}
-      {glassPosts.map(post => <Block key={`${post.x}-${post.z}`} at={[post.x,1.46,post.z]} size={[0.07,2.58,0.07]} material={mat.frame} />)}
+      {glassPosts.map(post => <Block key={`${post.x}-${post.z}`} at={[post.x, WALL / 2, post.z]} size={[0.07, WALL, 0.07]} material={mat.frame} />)}
       {doors.map((door) => (
         <DoorFrame key={`${door.x}-${door.z}`} door={door} />
       ))}
@@ -141,20 +141,27 @@ function Wall({ box, low = false }: { box: Box; low?: boolean }) {
   const height = low ? 0.55 : WALL
   const { x, z, w, d, glass } = box
   if (x === plan(-13) && z === 0) {
+    const trimH = 0.44
+    const baseH = 0.72
+    const mullionH = height - baseH - trimH
     return <group position={[x,0,z]}>
-      <Block at={[0,0.36,0]} size={[0.22,0.72,d]} material={mat.wall} />
-      <Block at={[0,3.28,0]} size={[0.22,0.44,d]} material={mat.trim} />
-      {[-7.8,-4,-0.2,3.6,7.8].map(dz => <Block key={dz} at={[0,1.9,plan(dz)]} size={[0.25,2.5,0.2]} material={mat.wall} />)}
+      <Block at={[0,baseH / 2,0]} size={[0.22,baseH,d]} material={mat.wall} />
+      <Block at={[0,height - trimH / 2,0]} size={[0.22,trimH,d]} material={mat.trim} />
+      {[-7.8,-4,-0.2,3.6,7.8].map(dz => <Block key={dz} at={[0,baseH + mullionH / 2,plan(dz)]} size={[0.25,mullionH,0.2]} material={mat.wall} />)}
     </group>
   }
   if (glass) {
+    const rail = 0.12
+    const paneTop = WALL - rail
+    const paneBottom = rail
+    const paneH = paneTop - paneBottom
     return (
       <group position={[x, 0, z]}>
-        <mesh position={[0, 1.72, 0]} material={mat.glass}>
-          <boxGeometry args={[Math.max(w - 0.08, 0.01), 3.08, Math.max(d - 0.08, 0.01)]} />
+        <mesh position={[0, paneBottom + paneH / 2, 0]} material={mat.glass}>
+          <boxGeometry args={[Math.max(w - 0.08, 0.01), paneH, Math.max(d - 0.08, 0.01)]} />
         </mesh>
-        <Block at={[0, 3.32, 0]} size={[w, 0.1, d + (w > d ? 0.04 : 0)]} material={mat.frame} />
-        <Block at={[0, 0.12, 0]} size={[w, 0.12, d + (w > d ? 0.04 : 0)]} material={mat.frame} />
+        <Block at={[0, WALL - rail / 2, 0]} size={[w, rail, d + (w > d ? 0.04 : 0)]} material={mat.frame} />
+        <Block at={[0, rail / 2, 0]} size={[w, rail, d + (w > d ? 0.04 : 0)]} material={mat.frame} />
       </group>
     )
   }
@@ -206,7 +213,7 @@ export function DoorFrame({ door }: { door: Door }) {
       </group>)}
     </group>
     {[-half,half].map(x => <Block key={x} at={[x,fit.openingHeight/2,fit.frameZ]} size={[fit.jambWidth,fit.openingHeight,fit.frameDepth]} material={mat.doorMetal} />)}
-    <Block at={[0,3.4,0]} size={[door.w,0.2,0.18]} material={mat.wall} />
+    <Block at={[0,(3.3 + WALL) / 2,0]} size={[door.w,WALL - 3.3,0.18]} material={mat.wall} />
     {[-1,1].map(side => <group key={side}>
       <Block at={[half+0.18,1.45,side === 1 ? 0.4 : -0.15]} size={[0.2,0.36,0.08]} material={mat.doorMetal} />
       <Block at={[half+0.18,1.55,side === 1 ? 0.447 : -0.197]} size={[0.12,0.025,0.012]} material={light} />
@@ -218,11 +225,13 @@ export function DoorFrame({ door }: { door: Door }) {
 }
 
 function Windows() {
+  const base = 0.78
+  const paneH = WALL - 0.44 - base
   return <group>
-    {[-5.9,-2.1,1.7,5.7].map(z => <group key={z} position={[-13,1.9,z]}>
-      <Block at={[0,0,0]} size={[0.06,2.35,3.6]} material={mat.window} />
-      {[-1.8,0,1.8].map(dz => <Block key={dz} at={[0.07,0,dz]} size={[0.1,2.4,0.055]} material={mat.white} />)}
-      <Block at={[0.1,-1.2,0]} size={[0.38,0.1,3.75]} />
+    {[-5.9,-2.1,1.7,5.7].map(z => <group key={z} position={[-13, base + paneH / 2, z]}>
+      <Block at={[0,0,0]} size={[0.06, paneH, 3.6]} material={mat.window} />
+      {[-1.8,0,1.8].map(dz => <Block key={dz} at={[0.07,0,dz]} size={[0.1, paneH - 0.08, 0.055]} material={mat.white} />)}
+      <Block at={[0.1, -paneH / 2 + 0.05, 0]} size={[0.38,0.1,3.75]} />
       <Block at={[0.06,0.05,0]} size={[0.1,0.05,3.6]} />
     </group>)}
   </group>
@@ -261,8 +270,8 @@ function Pendants() {
     <group>
       {spots.map(([x, z]) => (
         <group key={`${x}-${z}`} position={[x, 0, z]}>
-          <mesh position={[0, 3.2, 0]} material={mat.ink}>
-            <cylinderGeometry args={[0.015, 0.015, 0.55, 5]} />
+          <mesh position={[0, (WALL + 2.93) / 2, 0]} material={mat.ink}>
+            <cylinderGeometry args={[0.015, 0.015, WALL - 2.93, 5]} />
           </mesh>
           <mesh position={[0, 2.88, 0]} material={mat.lamp}>
             <cylinderGeometry args={[0.14, 0.08, 0.1, 6]} />

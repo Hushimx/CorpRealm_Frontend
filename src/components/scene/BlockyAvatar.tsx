@@ -113,7 +113,11 @@ export function BlockyCharacter({
 function stationaryClips(clips: AnimationClip[]) {
   return clips.map((clip) => {
     const next = clip.clone()
-    next.tracks = next.tracks.filter((track) => !track.name.startsWith('root.'))
+    next.tracks = next.tracks.filter((track) => {
+      if (track.name.startsWith('root.')) return false
+      if (next.name === 'idle' && (track.name.startsWith('head.') || track.name.startsWith('torso.'))) return false
+      return true
+    })
     return next
   })
 }

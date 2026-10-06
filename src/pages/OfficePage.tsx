@@ -9,7 +9,7 @@ import { ComputerDesktop, useDeskSession } from '../components/ComputerDesktop'
 import { TaskBoard } from '../components/TaskBoard'
 import { boardInReach, OFFICE_BOARDS } from '../office/boards'
 import { clearHeld, holdKey, queueJump, queueSit } from '../office/input'
-import { doors, props, rooms } from '../office/layout'
+import { doors, meetingTableNear, props, rooms } from '../office/layout'
 import { OfficeRoll, VoiceBar, VoiceRoster, floorMates, useOfficeListOpen } from '../components/VoiceOverlay'
 import { useOfficeMedia } from '../net/media'
 import { useOfficeRoom } from '../net/room'
@@ -81,6 +81,8 @@ export function OfficePage() {
   const nearChess = busy || presence.sitting ? null : chessInReach(presence.x, presence.z, STUDIO_CHESS)
   const nearXo = busy || presence.sitting || nearChess ? null : chessInReach(presence.x, presence.z, STUDIO_XO)
   const board = OFFICE_BOARDS.find((item) => item.id === openBoard) ?? null
+  const atMeetingTable = !overview && meetingTableNear(presence.x, presence.z)
+  const showShare = !menuOpen && !board && !computer.open && !chessOpen && !xoOpen && (atMeetingTable || media.sharing)
 
   function openTasks(id: string) {
     clearHeld()
@@ -195,7 +197,7 @@ export function OfficePage() {
 
   return (
     <div className={`relative h-svh bg-night ${looking && !menuOpen ? 'cursor-none' : ''}`}>
-      <OfficeStage parts={{ face, outfit, pants }} others={room.others} onPresence={setPresence} onPlace={room.standAt} onMotion={follow} place={room.place} screens={media.screens} cameras={media.cameras} overview={overview} paused={menuOpen || board !== null || computer.open || chessOpen || xoOpen} />
+      <OfficeStage parts={{ face, outfit, pants }} others={room.others} onPresence={setPresence} onPlace={room.standAt} onMotion={follow} place={room.place} screens={media.screens} overview={overview} paused={menuOpen || board !== null || computer.open || chessOpen || xoOpen} />
       <div className="pointer-events-none absolute inset-0">
         <div className="absolute top-3 right-3 flex flex-col items-end gap-3 sm:top-4 sm:right-4">
           {!overview && room.livekit ? <VoiceRoster media={media} faces={{ ...(user ? { [user.id]: face } : {}), ...Object.fromEntries(room.others.map((person) => [person.userId, person.face])) }} /> : null}
@@ -331,6 +333,17 @@ export function OfficePage() {
           >
             <KeyCap name="e" alt="E" className="h-8 w-auto" />
             Sit down
+          </button>
+        ) : null}
+
+        {showShare ? (
+          <button
+            type="button"
+            disabled={!media.ready}
+            onClick={() => void media.toggleShare()}
+            className="pointer-events-auto absolute bottom-36 left-1/2 -translate-x-1/2 rounded-full bg-paper px-4 py-2 text-sm font-medium text-ink shadow-pop disabled:opacity-40 sm:bottom-40"
+          >
+            {media.sharing ? 'Stop sharing' : 'Share screen'}
           </button>
         ) : null}
 

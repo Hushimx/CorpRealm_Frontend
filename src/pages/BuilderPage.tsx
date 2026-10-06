@@ -358,7 +358,6 @@ export function BuilderPage() {
         onStand={room.standAt}
         onMotion={follow}
         screens={media.screens}
-        cameras={media.cameras}
       />
       <div className="pointer-events-none absolute inset-0">
         {walking ? (

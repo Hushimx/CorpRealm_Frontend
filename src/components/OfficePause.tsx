@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router'
-import { MediaBar } from './MediaBar'
 import type { OfficeMedia } from '../net/media'
 import { useSession } from '../net/session'
 import { usePlaySettings } from '../store/play'
@@ -120,8 +119,6 @@ export function OfficePause({
           {local.error ? <p className="mt-2 text-sm font-medium text-danger">{local.error}</p> : null}
           {media.error ? <p className="mt-2 text-sm font-medium text-danger">{media.error}</p> : null}
         </div>
-
-        {media.ready ? <MediaBar media={media} /> : null}
 
         <div className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-ink/10 pt-3">
           {user ? <p className="w-full text-xs text-ink/70">Signed in as <span className="font-medium text-ink">{user.name.trim() || user.email}</span></p> : null}
