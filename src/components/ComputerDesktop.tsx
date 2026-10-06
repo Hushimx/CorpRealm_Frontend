@@ -136,8 +136,8 @@ export function ComputerDesktop({
   const clock = now.toLocaleTimeString(locale, { hour: 'numeric', minute: '2-digit' })
 
   return (
-    <div className="absolute inset-0 z-30 flex bg-ink p-2 text-ink sm:p-3">
-      <div className="relative min-h-0 min-w-0 flex-1 overflow-hidden rounded-[1.35rem] shadow-[inset_0_0_0_1px_rgba(0,0,0,0.08)]">
+    <div className="absolute inset-0 z-30 flex bg-transparent p-0 text-ink sm:bg-ink sm:p-3">
+      <div className={`relative min-h-0 min-w-0 flex-1 overflow-hidden sm:rounded-[1.35rem] sm:shadow-[inset_0_0_0_1px_rgba(0,0,0,0.08)] ${app ? 'desk-open' : ''}`}>
         <Wallpaper />
         <header className="absolute inset-x-0 top-0 z-30 flex h-12 items-center justify-between gap-2 bg-paper/90 px-3 text-ink backdrop-blur-md sm:h-14 sm:px-4">
           <p className="hidden shrink-0 text-[11px] font-bold tracking-[0.16em] text-ink/70 uppercase min-[420px]:block sm:text-xs">CORP Realm</p>

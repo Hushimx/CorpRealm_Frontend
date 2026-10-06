@@ -118,6 +118,21 @@ html[dir='rtl'] .uppercase {
   inset-inline: 0.5rem;
 }
 
+@media (max-width: 639px) {
+  .desk-open .desk-window {
+    top: 0;
+    bottom: 0;
+    inset-inline: 0;
+    border-radius: 0;
+    z-index: 30;
+  }
+
+  .desk-open > header,
+  .desk-open .desk-dock {
+    display: none;
+  }
+}
+
 @media (min-width: 640px) {
   .desk-window {
     top: 4rem;
@@ -130,14 +145,13 @@ html[dir='rtl'] .uppercase {
 .desk-dock {
   position: fixed;
   z-index: 40;
-  inset-inline: 0.5rem;
-  bottom: max(0.5rem, env(safe-area-inset-bottom));
+  inset-inline: 0;
+  bottom: 0;
   display: flex;
   gap: 0.125rem;
   overflow-x: auto;
-  border-radius: 1.15rem;
   background: color-mix(in srgb, var(--color-paper) 92%, transparent);
-  padding: 0.5rem;
+  padding: 0.5rem 0.5rem max(0.5rem, env(safe-area-inset-bottom));
   box-shadow: 0 -8px 24px rgba(17, 24, 39, 0.12);
   backdrop-filter: blur(12px);
 }
