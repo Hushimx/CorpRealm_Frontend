@@ -141,7 +141,7 @@ export function ComputerDesktop({
         <Wallpaper />
         <header className="absolute inset-x-0 top-0 z-30 flex h-12 items-center justify-between gap-2 bg-paper/90 px-3 text-ink backdrop-blur-md sm:h-14 sm:px-4">
           <p className="hidden shrink-0 text-[11px] font-bold tracking-[0.16em] text-ink/70 uppercase min-[420px]:block sm:text-xs">CORP Realm</p>
-          <p className="text-sm font-medium text-ink tabular-nums">{clock}</p>
+          <p dir="ltr" className="text-sm font-medium text-ink tabular-nums">{clock}</p>
           <div className="flex min-w-0 items-center gap-1.5 sm:gap-2">
             <LanguageSwitch compact />
             {page ? (

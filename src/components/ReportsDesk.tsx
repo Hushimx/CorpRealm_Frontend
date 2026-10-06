@@ -185,9 +185,9 @@ export function ReportsDesk({ officeId, people, onClose }: { officeId: string; p
                 <span className="flex items-center gap-2">
                   <span className={`h-2 w-2 shrink-0 rounded-full ${report.unread ? 'bg-lift' : 'bg-transparent'}`} />
                   <span className="min-w-0 flex-1 truncate text-sm font-bold">{report.title}</span>
-                  <span className="shrink-0 text-[11px] font-medium text-ink/50">{formatWhen(report.createdAt, locale)}</span>
+                  <span dir="ltr" className="shrink-0 text-[11px] font-medium tabular-nums text-ink/50">{formatWhen(report.createdAt, locale)}</span>
                 </span>
-                <span className="mt-0.5 block truncate ps-4 text-[11px] font-medium text-ink/55">
+                <span dir="auto" className="mt-0.5 block truncate ps-4 text-[11px] font-medium text-ink/55">
                   {box === 'sent' ? t('toPerson', { name: names(report.recipients, t('noOne')) }) : report.authorName}
                 </span>
               </button>
@@ -285,11 +285,20 @@ export function ReportsDesk({ officeId, people, onClose }: { officeId: string; p
               <button type="button" onClick={() => setSelectedId(null)} className="mb-3 rounded-full bg-frost px-3 py-1 text-xs font-bold text-ink sm:hidden">
                 {t('back')}
               </button>
-              <p className="text-xs font-medium text-ink/55">
-                {t('fromPerson', { name: selected.authorName })} · {new Date(selected.createdAt).toLocaleString(locale, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
-              </p>
-              <p className="mt-1 text-xs font-medium text-ink/70">{t('toPerson', { name: names(selected.recipients, t('noOne')) })}{box === 'sent' ? readNote(selected.recipients) : ''}</p>
-              {selected.project ? <p className="mt-1 text-xs font-bold text-ink">{t('projectDot', { name: selected.project.name })}</p> : null}
+              <dl className="space-y-2 rounded-2xl bg-mist p-3 text-sm text-ink">
+                <Meta label={t('from')} value={selected.authorName} />
+                <div className="grid grid-cols-[5.5rem_minmax(0,1fr)] items-baseline gap-2">
+                  <dt className="text-xs font-bold text-ink/55">{t('when')}</dt>
+                  <dd className="flex flex-wrap items-baseline gap-2 font-bold text-ink">
+                    <span>{new Date(selected.createdAt).toLocaleDateString(locale, { day: 'numeric', month: 'long' })}</span>
+                    <time dateTime={selected.createdAt} dir="ltr" className="tabular-nums">
+                      {new Date(selected.createdAt).toLocaleTimeString(locale, { hour: 'numeric', minute: '2-digit' })}
+                    </time>
+                  </dd>
+                </div>
+                <Meta label={t('to')} value={names(selected.recipients, t('noOne'))} note={box === 'sent' ? readNote(selected.recipients) : ''} />
+                {selected.project ? <Meta label={t('project')} value={selected.project.name} /> : null}
+              </dl>
               <h3 className="mt-3 font-black text-2xl text-ink">{selected.title}</h3>
               <p className="mt-3 text-sm whitespace-pre-wrap text-ink">{selected.body}</p>
               <div className="mt-4">
@@ -341,6 +350,18 @@ function SideButton({ label, count, active, onClick }: { label: string; count?: 
       <span>{label}</span>
       {count ? <span className="rounded-full bg-lift px-1.5 text-[11px] font-bold text-paper">{count}</span> : null}
     </button>
+  )
+}
+
+function Meta({ label, value, note }: { label: string; value: string; note?: string }) {
+  return (
+    <div className="grid grid-cols-[5.5rem_minmax(0,1fr)] items-baseline gap-2">
+      <dt className="text-xs font-bold text-ink/55">{label}</dt>
+      <dd className="min-w-0 font-bold break-words text-ink" dir="auto">
+        {value}
+        {note ? <span className="ms-2 text-xs font-medium text-ink/55">{note.replace(/^ · /, '')}</span> : null}
+      </dd>
+    </div>
   )
 }
 

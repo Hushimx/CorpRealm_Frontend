@@ -270,12 +270,14 @@ export function ChatDesk({ officeId, people, onClose }: { officeId: string; peop
                   return (
                     <article key={message.id} className="group rounded-2xl px-2 py-1.5 hover:bg-mist">
                       {grouped ? null : (
-                        <p className="text-sm text-ink">
-                          <span className="font-bold">{message.name}</span>
-                          <span className="ms-2 text-xs font-medium text-ink/50">{new Date(message.createdAt).toLocaleTimeString(locale, { hour: 'numeric', minute: '2-digit' })}</span>
+                        <p className="flex items-baseline gap-2">
+                          <span className="min-w-0 truncate font-bold text-ink">{message.name}</span>
+                          <time dateTime={message.createdAt} dir="ltr" className="shrink-0 text-xs font-medium tabular-nums text-ink/50">
+                            {new Date(message.createdAt).toLocaleTimeString(locale, { hour: 'numeric', minute: '2-digit' })}
+                          </time>
                         </p>
                       )}
-                      <p className="text-sm whitespace-pre-wrap text-ink">{message.body}</p>
+                      <p dir="auto" className="text-sm whitespace-pre-wrap text-ink">{message.body}</p>
                       <div className="mt-1 flex flex-wrap items-center gap-1">
                         {message.reactions.map((reaction) => (
                           <button key={reaction.emoji} type="button" onClick={() => void react(message.id, reaction.emoji)} className={`rounded-full px-2 py-0.5 text-xs font-bold text-ink ${reaction.mine ? 'bg-frost ring-1 ring-lift' : 'bg-mist'}`}>
