@@ -150,11 +150,11 @@ export function ReportsDesk({ officeId, people, onClose }: { officeId: string; p
   }
 
   return (
-    <section className="absolute top-16 end-3 bottom-4 start-32 z-10 flex flex-col overflow-hidden rounded-card bg-paper text-ink shadow-card sm:end-4 sm:start-36">
-      <header className="flex items-start justify-between gap-3 border-b border-ink/10 px-4 py-3">
+    <section className="desk-window flex flex-col overflow-hidden rounded-card bg-paper text-ink shadow-card">
+      <header className="flex flex-wrap items-start justify-between gap-3 border-b border-ink/10 px-4 py-3">
         <div className="min-w-0">
           <p className="text-xs font-bold tracking-[0.16em] text-ink/60 uppercase">{t('reports')}</p>
-          <h2 className="truncate font-bold text-3xl leading-none text-ink">{composing ? t('newReport') : selected ? selected.title : box === 'sent' ? t('sent') : t('inbox')}</h2>
+          <h2 className="truncate font-bold text-2xl leading-none text-ink sm:text-3xl">{composing ? t('newReport') : selected ? selected.title : box === 'sent' ? t('sent') : t('inbox')}</h2>
           <p className="mt-1 text-xs text-ink/60">{t('reportsHint')}</p>
         </div>
         <button type="button" onClick={onClose} className="shrink-0 rounded-full bg-frost px-3 py-1.5 text-xs font-bold text-ink">

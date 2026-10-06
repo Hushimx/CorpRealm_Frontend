@@ -120,17 +120,17 @@ export function TaskBoard({ boardId, title, people = [], onClose }: { boardId: s
 
   return (
     <div className="absolute inset-0 z-20 flex flex-col bg-frost text-ink">
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-ink/10 bg-paper px-4 py-3">
+      <div className="flex flex-col gap-2 border-b border-ink/10 bg-paper px-3 py-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3 sm:px-4 sm:py-3">
         <div className="min-w-0">
           <p className="text-xs font-bold tracking-[0.16em] text-ink/60 uppercase">{t('tasks')}</p>
-          <h2 className="truncate font-bold text-3xl leading-none">{knownCopy(title, t)}</h2>
+          <h2 className="truncate font-bold text-2xl leading-none sm:text-3xl">{knownCopy(title, t)}</h2>
         </div>
-        <div className="flex min-w-0 flex-1 flex-wrap items-center justify-end gap-2">
+        <div className="flex min-w-0 items-center gap-2 overflow-x-auto sm:flex-1 sm:flex-wrap sm:justify-end">
           <input
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder={t('searchCards')}
-            className="w-full max-w-52 rounded-full border border-ink/15 bg-paper px-3 py-1.5 text-sm text-ink outline-none placeholder:text-ink/40 focus-visible:border-lift sm:w-52"
+            className="w-36 shrink-0 rounded-full border border-ink/15 bg-paper px-3 py-1.5 text-sm text-ink outline-none placeholder:text-ink/40 focus-visible:border-lift sm:w-52"
           />
           {(['all', 'mine', 'due', 'archived'] as const).map((mode) => (
             <button
@@ -138,12 +138,12 @@ export function TaskBoard({ boardId, title, people = [], onClose }: { boardId: s
               type="button"
               aria-pressed={filter === mode}
               onClick={() => setFilter(mode)}
-              className={`rounded-full px-3 py-1.5 text-xs font-bold ${filter === mode ? 'bg-ink text-paper' : 'bg-frost text-ink'}`}
+              className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-bold ${filter === mode ? 'bg-ink text-paper' : 'bg-frost text-ink'}`}
             >
               {mode === 'all' ? t('all') : mode === 'mine' ? t('mine') : mode === 'due' ? t('due') : t('archive')}
             </button>
           ))}
-          <button type="button" onClick={onClose} className="rounded-full bg-ink px-4 py-2 text-xs font-bold text-paper">
+          <button type="button" onClick={onClose} className="shrink-0 rounded-full bg-ink px-4 py-2 text-xs font-bold text-paper">
             {t('close')}
           </button>
         </div>

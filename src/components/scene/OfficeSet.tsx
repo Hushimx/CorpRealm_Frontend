@@ -853,6 +853,7 @@ function useSign(label: string, ink = '#000000', paper = '#ffffff', aspect = 4) 
       context.fillStyle = ink
       context.textAlign = 'center'
       context.textBaseline = 'middle'
+      context.direction = /[\u0600-\u06FF]/.test(label) ? 'rtl' : 'ltr'
       const family = '"Thmanyah Sans", system-ui, sans-serif'
       const limit = width - 96
       let size = Math.floor(height * 0.62)

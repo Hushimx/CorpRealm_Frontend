@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { CanvasTexture, SRGBColorSpace } from 'three'
+import { knownCopy, text } from '../../i18n'
+import { usePlaySettings } from '../../store/play'
 import { LABEL_HEX, asLabelColor, seedBoard, useTaskStore, type TaskBoardData, type TaskCard } from '../../store/tasks'
 
 const PAPER = '#ffffff'
@@ -10,8 +12,9 @@ const MUTED = '#5c5c5c'
 export function TaskSurface({ boardId, width, height }: { boardId: string; width: number; height: number }) {
   const saved = useTaskStore((state) => state.boards[boardId])
   const ensure = useTaskStore((state) => state.ensure)
+  const lang = usePlaySettings((state) => state.lang)
   const data = saved ?? seedBoard(boardId)
-  const map = useBoardTexture(data)
+  const map = useBoardTexture(data, lang)
 
   useEffect(() => {
     ensure(boardId)
@@ -25,7 +28,7 @@ export function TaskSurface({ boardId, width, height }: { boardId: string; width
   )
 }
 
-function useBoardTexture(data: TaskBoardData) {
+function useBoardTexture(data: TaskBoardData, lang: string) {
   const [map, setMap] = useState<CanvasTexture | null>(null)
   const texture = useRef<CanvasTexture | null>(null)
   const signature = JSON.stringify(data)
@@ -49,7 +52,7 @@ function useBoardTexture(data: TaskBoardData) {
       texture.current?.dispose()
       texture.current = null
     }
-  }, [signature])
+  }, [lang, signature])
 
   return map
 }
@@ -82,10 +85,8 @@ function paintBoard(data: TaskBoardData) {
 
     context.fillStyle = INK
     context.font = `700 ${titleSize}px "Thmanyah Sans", system-ui, sans-serif`
-    context.textAlign = 'left'
     context.textBaseline = 'middle'
-    const header = fit(context, column.title, colW - 110)
-    context.fillText(header, x + 22, y + 46)
+    write(context, knownCopy(column.title, text), x + 22, y + 46, colW - 110)
 
     const cards = column.cardIds.map((id) => data.cards[id]).filter((card): card is TaskCard => card !== undefined && !card.archived)
     const badge = String(cards.length)
@@ -105,8 +106,7 @@ function paintBoard(data: TaskBoardData) {
     if (cards.length === 0) {
       context.fillStyle = MUTED
       context.font = `500 ${detailSize}px "Thmanyah Sans", system-ui, sans-serif`
-      context.textAlign = 'left'
-      context.fillText('Nothing here yet.', x + 22, cardTop + 16)
+      write(context, text('nothingYet'), x + 22, cardTop + 16, colW - 44)
       return
     }
 
@@ -123,22 +123,20 @@ function paintBoard(data: TaskBoardData) {
         context.fillStyle = LABEL_HEX[cover]
         context.fillRect(x + 22, cy + 8, Math.min(72, colW - 52), 6)
       }
-      context.textAlign = 'left'
       context.fillStyle = INK
       context.font = `700 ${cardTitle}px "Thmanyah Sans", system-ui, sans-serif`
-      context.fillText(fit(context, card.title, colW - 58), x + 30, cy + cardTitle * 0.7 + 8)
+      write(context, card.title, x + 30, cy + cardTitle * 0.7 + 8, colW - 58)
       if (card.detail) {
         context.fillStyle = MUTED
         context.font = `500 ${detailSize}px "Thmanyah Sans", system-ui, sans-serif`
-        context.fillText(fit(context, card.detail, colW - 58), x + 30, cy + cardTitle + detailSize + 10)
+        write(context, card.detail, x + 30, cy + cardTitle + detailSize + 10, colW - 58)
       }
     })
     if (hidden > 0) {
       const cy = cardTop + shown.length * (cardH + 12) + 8
       context.fillStyle = INK
       context.font = `700 ${detailSize}px "Thmanyah Sans", system-ui, sans-serif`
-      context.textAlign = 'left'
-      context.fillText(`+${hidden} more`, x + 22, cy)
+      write(context, text('more', { n: hidden }), x + 22, cy, colW - 44)
     }
   })
 
@@ -148,6 +146,13 @@ function paintBoard(data: TaskBoardData) {
 function roundRect(context: CanvasRenderingContext2D, x: number, y: number, width: number, height: number, radius: number) {
   context.beginPath()
   context.roundRect(x, y, width, height, radius)
+}
+
+function write(context: CanvasRenderingContext2D, value: string, x: number, y: number, max: number) {
+  const arabic = /[\u0600-\u06FF]/.test(value)
+  context.direction = arabic ? 'rtl' : 'ltr'
+  context.textAlign = arabic ? 'right' : 'left'
+  context.fillText(fit(context, value, max), arabic ? x + max : x, y)
 }
 
 function fit(context: CanvasRenderingContext2D, text: string, max: number) {

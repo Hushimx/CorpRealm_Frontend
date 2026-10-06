@@ -56,11 +56,13 @@ export function Shell() {
 
   const t = useT()
   const home = !user ? '/login' : user.avatarReady ? '/office' : '/avatar'
-  const office = useLocation().pathname === '/office'
+  const path = useLocation().pathname
+  const office = path === '/office'
+  const desk = path === '/desktop'
 
   return (
     <div className="flex min-h-svh flex-col text-ink">
-      {office ? null : <header className="flex items-center justify-between gap-2 px-4 py-4 sm:px-5 md:px-8">
+      {office ? null : <header className={`${desk ? 'hidden sm:flex' : 'flex'} items-center justify-between gap-2 px-4 py-4 sm:px-5 md:px-8`}>
         <NavLink to={home} className="flex shrink-0 items-center gap-2.5 text-ink" aria-label={t('home')}>
           <BrandMark className="h-7 w-auto" />
           <span className="text-xl leading-none font-black">CORP Realm</span>
@@ -101,7 +103,7 @@ export function Shell() {
           ) : null}
         </nav>
       </header>}
-      <div className={office ? 'relative min-h-svh' : 'relative min-h-0 flex-1'}>
+      <div className={office ? 'relative min-h-svh' : desk ? 'relative h-svh sm:h-auto sm:min-h-0 sm:flex-1' : 'relative min-h-0 flex-1'}>
       <Outlet />
       </div>
       {offline ? <ConnectionPage /> : null}

@@ -139,21 +139,22 @@ export function ComputerDesktop({
     <div className="absolute inset-0 z-30 flex bg-ink p-2 text-ink sm:p-3">
       <div className="relative min-h-0 min-w-0 flex-1 overflow-hidden rounded-[1.35rem] shadow-[inset_0_0_0_1px_rgba(0,0,0,0.08)]">
         <Wallpaper />
-        <header className="absolute inset-x-0 top-0 z-20 flex flex-wrap items-center justify-between gap-3 bg-paper/90 px-4 py-2.5 text-ink backdrop-blur-md">
-          <p className="text-xs font-bold tracking-[0.16em] text-ink/70 uppercase">CORP Realm</p>
+        <header className="absolute inset-x-0 top-0 z-30 flex h-12 items-center justify-between gap-2 bg-paper/90 px-3 text-ink backdrop-blur-md sm:h-14 sm:px-4">
+          <p className="hidden shrink-0 text-[11px] font-bold tracking-[0.16em] text-ink/70 uppercase min-[420px]:block sm:text-xs">CORP Realm</p>
           <p className="text-sm font-medium text-ink tabular-nums">{clock}</p>
-          <div className="flex items-center gap-2">
-            <LanguageSwitch />
+          <div className="flex min-w-0 items-center gap-1.5 sm:gap-2">
+            <LanguageSwitch compact />
             {page ? (
-              <Link to="/office" className="rounded-full bg-ink px-3 py-1.5 text-xs font-bold text-paper">
-                {t('openOffice')}
+              <Link to="/office" className="shrink-0 rounded-full bg-ink px-2.5 py-1 text-[11px] font-bold whitespace-nowrap text-paper sm:px-3 sm:py-1.5 sm:text-xs">
+                <span className="sm:hidden">{t('office')}</span>
+                <span className="hidden sm:inline">{t('openOffice')}</span>
               </Link>
             ) : (
               <>
-                <button type="button" onClick={onLeave} className="rounded-full bg-frost px-3 py-1.5 text-xs font-bold text-ink">
+                <button type="button" onClick={onLeave} className="shrink-0 rounded-full bg-frost px-2.5 py-1 text-[11px] font-bold whitespace-nowrap text-ink sm:px-3 sm:py-1.5 sm:text-xs">
                   {t('leaveScreen')}
                 </button>
-                <button type="button" onClick={onStand} className="rounded-full bg-ink px-3 py-1.5 text-xs font-bold text-paper">
+                <button type="button" onClick={onStand} className="shrink-0 rounded-full bg-ink px-2.5 py-1 text-[11px] font-bold whitespace-nowrap text-paper sm:px-3 sm:py-1.5 sm:text-xs">
                   {t('standUp')}
                 </button>
               </>
@@ -161,7 +162,7 @@ export function ComputerDesktop({
           </div>
         </header>
 
-        <nav className="absolute top-16 bottom-4 start-3 z-20 flex w-28 flex-col gap-3 overflow-y-auto sm:start-4" aria-label={t('programs')}>
+        <nav className="desk-dock" aria-label={t('programs')}>
           {PROGRAMS.map((program) => {
             const active = app === program.id
             return (
@@ -173,28 +174,28 @@ export function ComputerDesktop({
                   setBoardId(null)
                   setApp((current) => (current === program.id ? null : program.id))
                 }}
-                className="flex flex-col items-center gap-1.5"
+                className="flex w-14 shrink-0 flex-col items-center gap-1 sm:w-auto sm:gap-1.5"
               >
                 <span
                   className={[
-                    'grid h-16 w-16 place-items-center rounded-[1.15rem] bg-paper text-ink shadow-pop',
+                    'grid h-12 w-12 place-items-center rounded-2xl bg-paper text-ink shadow-pop sm:h-16 sm:w-16 sm:rounded-[1.15rem]',
                     active ? 'ring-2 ring-ink' : '',
                   ].join(' ')}
                 >
                   <ProgramMark id={program.id} />
                 </span>
-                <span className="rounded-full bg-paper/95 px-2 py-0.5 text-center text-xs font-bold text-ink">{t(program.label)}</span>
+                <span className="line-clamp-2 max-w-full px-0.5 text-center text-[10px] leading-tight font-bold text-ink sm:rounded-full sm:bg-paper/95 sm:px-2 sm:py-0.5 sm:text-xs">{t(program.label)}</span>
               </button>
             )
           })}
         </nav>
 
         {app === 'tasks' && !openBoard ? (
-          <section className="absolute top-16 end-3 bottom-4 start-32 z-10 flex flex-col overflow-hidden rounded-card bg-paper text-ink shadow-card sm:end-4 sm:start-36">
-            <div className="flex items-start justify-between gap-3 border-b border-ink/10 px-4 py-3">
+          <section className="desk-window flex flex-col overflow-hidden rounded-card bg-paper text-ink shadow-card">
+            <div className="flex flex-wrap items-start justify-between gap-3 border-b border-ink/10 px-4 py-3">
               <div>
                 <p className="text-xs font-bold tracking-[0.16em] text-ink/60 uppercase">{t('tasks')}</p>
-                <h2 className="font-bold text-3xl leading-none">{t('allBoards')}</h2>
+                <h2 className="font-bold text-2xl leading-none sm:text-3xl">{t('allBoards')}</h2>
                 <p className="mt-1 text-xs text-ink/60">{t('boardsHint')}</p>
               </div>
               <div className="flex shrink-0 gap-2">
@@ -261,7 +262,7 @@ export function ComputerDesktop({
         ) : null}
 
         {app === 'tasks' && openBoard ? (
-          <div className="absolute top-16 end-3 bottom-4 start-32 z-10 overflow-hidden rounded-card sm:end-4 sm:start-36">
+          <div className="desk-window overflow-hidden rounded-card">
             <div className="relative h-full">
               <TaskBoard boardId={openBoard.id} title={openBoard.title} people={people} onClose={() => setBoardId(null)} />
             </div>
@@ -291,9 +292,9 @@ function Wallpaper() {
         `,
       }}
     >
-      <div className="absolute inset-0 flex flex-col items-center justify-center px-6 text-center text-ink">
-        <img src="/branding/corplift-logo.svg" alt="CorpLift" className="w-56 max-w-[70%] sm:w-72" />
-        <p className="mt-6 text-4xl leading-tight font-black text-ink sm:text-6xl">CORP Realm</p>
+      <div className="absolute inset-0 flex flex-col items-center justify-center px-6 pb-28 text-center text-ink sm:pb-0">
+        <img src="/branding/corplift-logo.svg" alt="CorpLift" className="w-40 max-w-[55%] sm:w-72" />
+        <p className="mt-4 text-3xl leading-tight font-black text-ink sm:mt-6 sm:text-6xl">CORP Realm</p>
         <DeskHint />
       </div>
     </div>

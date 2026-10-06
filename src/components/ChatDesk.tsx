@@ -182,11 +182,11 @@ export function ChatDesk({ officeId, people, onClose }: { officeId: string; peop
   const roomChannels = channels.filter((channel) => channel.kind === 'channel')
 
   return (
-    <section className="absolute top-16 end-3 bottom-4 start-32 z-10 flex flex-col overflow-hidden rounded-card bg-paper text-ink shadow-card sm:end-4 sm:start-36">
-      <div className="flex items-start justify-between gap-3 border-b border-ink/10 px-4 py-3">
-        <div>
+    <section className="desk-window flex flex-col overflow-hidden rounded-card bg-paper text-ink shadow-card">
+      <div className="flex flex-wrap items-start justify-between gap-3 border-b border-ink/10 px-4 py-3">
+        <div className="min-w-0">
           <p className="text-xs font-bold tracking-[0.16em] text-ink/60 uppercase">{t('chat')}</p>
-          <h2 className="font-bold text-3xl leading-none">{open ? (open.kind === 'dm' ? open.title : `# ${open.title}`) : t('officeChat')}</h2>
+          <h2 className="font-bold text-2xl leading-none sm:text-3xl">{open ? (open.kind === 'dm' ? open.title : `# ${channelLabel(open.title, t)}`) : t('officeChat')}</h2>
           <p className="mt-1 text-xs text-ink/60">{t('chatHint')}</p>
         </div>
         <button type="button" onClick={onClose} className="shrink-0 rounded-full bg-ink px-3 py-1.5 text-xs font-bold text-paper">
@@ -222,7 +222,7 @@ export function ChatDesk({ officeId, people, onClose }: { officeId: string; peop
             ) : null}
             <div className="mt-2 space-y-1">
               {roomChannels.map((channel) => (
-                <ChannelButton key={channel.id} label={`# ${channel.title}`} active={channel.id === channelId} unread={unread(channel)} onClick={() => choose(channel.id)} />
+                <ChannelButton key={channel.id} label={`# ${channelLabel(channel.title, t)}`} active={channel.id === channelId} unread={unread(channel)} onClick={() => choose(channel.id)} />
               ))}
             </div>
           </div>
@@ -253,7 +253,7 @@ export function ChatDesk({ officeId, people, onClose }: { officeId: string; peop
                 <button type="button" onClick={() => setChannelId(null)} className="rounded-full bg-frost px-3 py-1 text-xs font-bold text-ink">
                   {t('channels')}
                 </button>
-                <p className="min-w-0 truncate text-sm font-bold text-ink">{open.kind === 'dm' ? open.title : `# ${open.title}`}</p>
+                <p className="min-w-0 truncate text-sm font-bold text-ink">{open.kind === 'dm' ? open.title : `# ${channelLabel(open.title, t)}`}</p>
               </div>
               <div
                 ref={scroller}
@@ -316,7 +316,7 @@ export function ChatDesk({ officeId, people, onClose }: { officeId: string; peop
                     }
                   }}
                   rows={2}
-                  placeholder={t('messageTo', { name: open.kind === 'dm' ? open.title : `#${open.title}` })}
+                  placeholder={t('messageTo', { name: open.kind === 'dm' ? open.title : `#${channelLabel(open.title, t)}` })}
                   className="w-full resize-none rounded-2xl border border-ink/15 bg-paper px-3 py-2 text-sm text-ink outline-none placeholder:text-ink/40 focus-visible:border-lift"
                 />
               </form>
@@ -330,6 +330,10 @@ export function ChatDesk({ officeId, people, onClose }: { officeId: string; peop
       </div>
     </section>
   )
+}
+
+function channelLabel(title: string, t: (key: 'channelGeneral') => string) {
+  return title.trim().toLowerCase() === 'general' ? t('channelGeneral') : title
 }
 
 function ChannelButton({ label, hint, active, unread: isUnread, onClick }: { label: string; hint?: string; active: boolean; unread: boolean; onClick: () => void }) {

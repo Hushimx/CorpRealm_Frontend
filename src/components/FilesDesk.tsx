@@ -159,7 +159,7 @@ export function FilesDesk({ officeId, onClose }: { officeId: string; onClose: ()
   const empty = shownFolders.length === 0 && shownFiles.length === 0
 
   return (
-    <section className="absolute top-16 end-3 bottom-4 start-32 z-10 flex overflow-hidden rounded-card bg-paper text-ink shadow-card sm:end-4 sm:start-36" onMouseDown={() => setMenu(null)}>
+    <section className="desk-window flex overflow-hidden rounded-card bg-paper text-ink shadow-card" onMouseDown={() => setMenu(null)}>
       <aside className="hidden w-52 shrink-0 flex-col border-e border-line bg-mist sm:flex">
         <p className="px-4 pt-4 text-xs font-bold tracking-[0.16em] text-ink/50 uppercase">{t('files')}</p>
         <nav className="mt-3 min-h-0 flex-1 space-y-1 overflow-y-auto px-2 pb-3" aria-label={t('folders')}>
@@ -282,7 +282,7 @@ export function FilesDesk({ officeId, onClose }: { officeId: string; onClose: ()
                       <div className="flex items-start gap-2 px-3 py-2">
                         <div className="min-w-0 flex-1">
                           <p className="truncate text-sm font-bold text-ink">{file.name}</p>
-                          <p className="truncate text-[11px] text-ink/55">{formatSize(file.size)} · {file.authorName}</p>
+                          <p className="truncate text-[11px] text-ink/55">{formatSize(file.size, locale)} · {file.authorName}</p>
                         </div>
                         <button type="button" aria-label={t('fileActions', { name: file.name })} onClick={(event) => openMenu(event, { kind: 'file', id: file.id })} className="text-sm font-bold text-ink">
                           ···
@@ -308,7 +308,7 @@ export function FilesDesk({ officeId, onClose }: { officeId: string; onClose: ()
                       </button>
                       <span className="hidden truncate text-xs text-ink/70 lg:block">{file.authorName}</span>
                       <span className="hidden truncate text-xs text-ink/70 md:block">{formatWhen(file.createdAt, locale)}</span>
-                      <span className="truncate text-xs text-ink/70">{formatSize(file.size)}</span>
+                      <span className="truncate text-xs text-ink/70">{formatSize(file.size, locale)}</span>
                       <button type="button" aria-label={t('fileActions', { name: file.name })} onClick={(event) => openMenu(event, { kind: 'file', id: file.id })} className="text-sm font-bold text-ink">
                         ···
                       </button>
@@ -505,10 +505,12 @@ async function readMessage(response: Response) {
   return response.statusText
 }
 
-function formatSize(bytes: number) {
-  if (bytes < 1024) return `${bytes} B`
-  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+function formatSize(bytes: number, locale: string) {
+  const arabic = locale.startsWith('ar')
+  if (bytes < 1024) return arabic ? `${bytes} بايت` : `${bytes} B`
+  if (bytes < 1024 * 1024) return arabic ? `${Math.round(bytes / 1024)} ك.ب` : `${Math.round(bytes / 1024)} KB`
+  const mega = (bytes / (1024 * 1024)).toFixed(1)
+  return arabic ? `${mega} م.ب` : `${mega} MB`
 }
 
 function formatWhen(value: string, locale: string) {

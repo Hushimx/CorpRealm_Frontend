@@ -140,7 +140,7 @@ export function ProjectsDesk({
   const showList = !creating && !selectedId
 
   return (
-    <section className="absolute top-16 end-3 bottom-4 start-32 z-10 flex overflow-hidden rounded-card bg-paper text-ink shadow-card sm:end-4 sm:start-36">
+    <section className="desk-window flex overflow-hidden rounded-card bg-paper text-ink shadow-card">
       <aside className={`${showList ? 'flex' : 'hidden sm:flex'} w-full shrink-0 flex-col border-e border-line bg-mist sm:w-60`}>
         <div className="flex items-center justify-between px-3 pt-4">
           <p className="text-xs font-bold tracking-[0.16em] text-ink/50 uppercase">{t('projects')}</p>

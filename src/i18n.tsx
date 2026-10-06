@@ -74,7 +74,7 @@ const en = {
   cancel: 'Cancel',
   boardFailed: 'The board could not be created.',
   noBoards: 'No boards on this floor yet.',
-  deskOn: 'The desk is on. Open a program from the side.',
+  deskOn: 'The desk is on. Open a program.',
   open: 'Open',
   nothingYet: 'Nothing here yet.',
   more: '+{n} more',
@@ -250,6 +250,7 @@ const en = {
   reactionFail: 'The reaction could not be saved.',
   channelRemoveFail: 'The channel could not be removed.',
   design: 'design',
+  channelGeneral: 'general',
   officeFiles: 'Office files',
   folders: 'Folders',
   filesHint: 'Shared with this office. Up to 12 MB each.',
@@ -479,7 +480,7 @@ const ar: { [K in CopyKey]: string } = {
   projects: 'المشاريع',
   stats: 'الإحصاءات',
   leaveScreen: 'اترك الشاشة',
-  standUp: 'قوم',
+  standUp: 'قف',
   sitDown: 'اجلس',
   close: 'إغلاق',
   allBoards: 'كل اللوحات',
@@ -493,7 +494,7 @@ const ar: { [K in CopyKey]: string } = {
   cancel: 'إلغاء',
   boardFailed: 'ما قدرنا ننشئ اللوحة.',
   noBoards: 'ما فيه لوحات في هذا الدور بعد.',
-  deskOn: 'المكتب شغّال. افتح برنامجًا من الجانب.',
+  deskOn: 'المكتب شغّال. افتح برنامجًا.',
   open: 'فتح',
   nothingYet: 'ما فيه شيء هنا بعد.',
   more: '+{n} زيادة',
@@ -669,9 +670,10 @@ const ar: { [K in CopyKey]: string } = {
   reactionFail: 'ما قدرنا نحفظ التفاعل.',
   channelRemoveFail: 'ما قدرنا نحذف القناة.',
   design: 'تصميم',
+  channelGeneral: 'عام',
   officeFiles: 'ملفات المكتب',
   folders: 'المجلدات',
-  filesHint: 'مشتركة مع هذا المكتب. كل ملف إلى 12 م.ب.',
+  filesHint: 'مشتركة مع هذا المكتب. كل ملف بحد أقصى 12 م.ب.',
   searchFiles: 'ابحث في الملفات',
   layout: 'العرض',
   list: 'قائمة',
@@ -952,22 +954,22 @@ export function LanguageSync() {
   return null
 }
 
-export function LanguageSwitch() {
+export function LanguageSwitch({ compact = false }: { compact?: boolean }) {
   const lang = usePlaySettings((state) => state.lang)
   const setLang = usePlaySettings((state) => state.setLang)
   const t = useT()
   return (
     <div className="flex rounded-full bg-frost p-0.5" role="group" aria-label={t('language')}>
-      <button type="button" aria-pressed={lang === 'en'} onClick={() => setLang('en')} className={chip(lang === 'en')}>
-        {t('english')}
+      <button type="button" aria-pressed={lang === 'en'} onClick={() => setLang('en')} className={chip(lang === 'en', compact)}>
+        {compact ? 'EN' : t('english')}
       </button>
-      <button type="button" aria-pressed={lang === 'ar'} onClick={() => setLang('ar')} className={chip(lang === 'ar')}>
-        {t('arabic')}
+      <button type="button" aria-pressed={lang === 'ar'} onClick={() => setLang('ar')} className={chip(lang === 'ar', compact)}>
+        {compact ? 'عربي' : t('arabic')}
       </button>
     </div>
   )
 }
 
-function chip(on: boolean) {
-  return ['rounded-full px-3 py-1.5 text-xs font-bold', on ? 'bg-ink text-paper' : 'text-ink'].join(' ')
+function chip(on: boolean, compact: boolean) {
+  return ['rounded-full text-xs font-bold', compact ? 'px-2 py-1' : 'px-3 py-1.5', on ? 'bg-ink text-paper' : 'text-ink'].join(' ')
 }

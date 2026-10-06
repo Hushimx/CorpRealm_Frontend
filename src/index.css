@@ -9,28 +9,28 @@
 */
 @font-face {
   font-family: "Thmanyah Sans";
-  src: local("thmanyahsans-Regular"), url("/fonts/thmanyahsans-Regular.woff2") format("woff2");
+  src: local("thmanyah sans"), local("thmanyahsans-Regular"), url("/fonts/thmanyahsans-Regular.woff2") format("woff2");
   font-weight: 400;
   font-style: normal;
   font-display: swap;
 }
 @font-face {
   font-family: "Thmanyah Sans";
-  src: local("thmanyahsans-Medium"), url("/fonts/thmanyahsans-Medium.woff2") format("woff2");
+  src: local("thmanyah sans Medium"), local("thmanyahsans-Medium"), url("/fonts/thmanyahsans-Medium.woff2") format("woff2");
   font-weight: 500;
   font-style: normal;
   font-display: swap;
 }
 @font-face {
   font-family: "Thmanyah Sans";
-  src: local("thmanyahsans-Bold"), url("/fonts/thmanyahsans-Bold.woff2") format("woff2");
+  src: local("thmanyah sans Bold"), local("thmanyahsans-Bold"), url("/fonts/thmanyahsans-Bold.woff2") format("woff2");
   font-weight: 700;
   font-style: normal;
   font-display: swap;
 }
 @font-face {
   font-family: "Thmanyah Sans";
-  src: local("thmanyahsans-Black"), url("/fonts/thmanyahsans-Black.woff2") format("woff2");
+  src: local("thmanyah sans Black"), local("thmanyahsans-Black"), url("/fonts/thmanyahsans-Black.woff2") format("woff2");
   font-weight: 900;
   font-style: normal;
   font-display: swap;
@@ -96,7 +96,65 @@ body {
   color: var(--color-paper);
 }
 
-/* Arabic letters should stay tight. The tracked uppercase labels are for Latin. */
+button,
+input,
+textarea,
+select {
+  font-family: inherit;
+}
+
+/* Tracked uppercase labels are for Latin. On Arabic they split the letters apart. */
 html[dir='rtl'] .uppercase {
   letter-spacing: 0;
+  text-transform: none;
+}
+
+/* Phone: the program sits above the bottom dock. Wider screens keep the side dock. */
+.desk-window {
+  position: absolute;
+  z-index: 10;
+  top: 3.25rem;
+  bottom: calc(6.75rem + env(safe-area-inset-bottom));
+  inset-inline: 0.5rem;
+}
+
+@media (min-width: 640px) {
+  .desk-window {
+    top: 4rem;
+    bottom: 1rem;
+    inset-inline-start: 9rem;
+    inset-inline-end: 1rem;
+  }
+}
+
+.desk-dock {
+  position: absolute;
+  z-index: 20;
+  inset-inline: 0;
+  bottom: 0;
+  display: flex;
+  gap: 0.125rem;
+  overflow-x: auto;
+  background: color-mix(in srgb, var(--color-paper) 85%, transparent);
+  padding: 0.5rem 0.5rem max(0.5rem, env(safe-area-inset-bottom));
+  box-shadow: 0 -8px 24px rgba(17, 24, 39, 0.06);
+  backdrop-filter: blur(12px);
+}
+
+@media (min-width: 640px) {
+  .desk-dock {
+    inset-inline: auto;
+    inset-inline-start: 1rem;
+    top: 4rem;
+    bottom: 1rem;
+    width: 7rem;
+    flex-direction: column;
+    gap: 0.75rem;
+    overflow-x: hidden;
+    overflow-y: auto;
+    background: transparent;
+    padding: 0;
+    box-shadow: none;
+    backdrop-filter: none;
+  }
 }
