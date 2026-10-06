@@ -11,7 +11,7 @@ const ENTRY = 3.4
 
 export const BUILDING = { x: 0, z: plan(-5), w: plan(26), d: plan(26) }
 
-export type Box = { x: number; z: number; w: number; d: number; glass?: boolean; top?: number }
+export type Box = { x: number; z: number; w: number; d: number; glass?: boolean }
 
 export type Room = {
   id: string
@@ -251,62 +251,41 @@ function oriented(width: number, depth: number, rot = 0) {
   return Math.abs(Math.sin(rot)) > 0.5 ? { w: depth, d: width } : { w: width, d: depth }
 }
 
-const CLEARANCE: Partial<Record<Prop['kind'], number>> = {
-  desk: 1.28,
-  chair: 1.05,
-  side: 1.05,
-  meet: 1.28,
-  sofa: 0.95,
-  bean: 0.75,
-  plant: 1.25,
-  round: 0.8,
-  chess: 1.2,
-  xo: 1.15,
-  cooler: 1.12,
-  kitchen: 1.16,
-  fridge: 1.72,
-  books: 2.15,
-  crates: 2.05,
-  server: 1.82,
-  bin: 0.5,
-}
-
 export function solidFor(prop: Prop): Box | null {
-  const top = CLEARANCE[prop.kind]
   switch (prop.kind) {
     case 'desk':
-      return { x: prop.x, z: prop.z, top, ...oriented(FURNITURE_FOOTPRINT.desk.w, FURNITURE_FOOTPRINT.desk.d, prop.rot ?? 0) }
+      return { x: prop.x, z: prop.z, ...oriented(FURNITURE_FOOTPRINT.desk.w, FURNITURE_FOOTPRINT.desk.d, prop.rot ?? 0) }
     case 'chair':
     case 'side':
-      return { x: prop.x, z: prop.z, top, ...oriented(FURNITURE_FOOTPRINT.chair.w, FURNITURE_FOOTPRINT.chair.d, prop.rot ?? 0) }
+      return { x: prop.x, z: prop.z, ...oriented(FURNITURE_FOOTPRINT.chair.w, FURNITURE_FOOTPRINT.chair.d, prop.rot ?? 0) }
     case 'meet':
-      return { x: prop.x, z: prop.z, top, ...oriented(FURNITURE_FOOTPRINT.meet.w, FURNITURE_FOOTPRINT.meet.d, prop.rot ?? 0) }
+      return { x: prop.x, z: prop.z, ...oriented(FURNITURE_FOOTPRINT.meet.w, FURNITURE_FOOTPRINT.meet.d, prop.rot ?? 0) }
     case 'sofa':
-      return { x: prop.x, z: prop.z, top, ...oriented(2.05, 0.85, prop.rot ?? 0) }
+      return { x: prop.x, z: prop.z, ...oriented(2.05, 0.85, prop.rot ?? 0) }
     case 'bean':
-      return { x: prop.x, z: prop.z, top, w: 1.04, d: 1.04 }
+      return { x: prop.x, z: prop.z, w: 1.04, d: 1.04 }
     case 'plant':
-      return { x: prop.x, z: prop.z, top, w: 0.54, d: 0.54 }
+      return { x: prop.x, z: prop.z, w: 0.54, d: 0.54 }
     case 'round':
-      return { x: prop.x, z: prop.z, top, ...FURNITURE_FOOTPRINT.round }
+      return { x: prop.x, z: prop.z, ...FURNITURE_FOOTPRINT.round }
     case 'chess':
-      return { x: prop.x, z: prop.z, top, ...FURNITURE_FOOTPRINT.chess }
+      return { x: prop.x, z: prop.z, ...FURNITURE_FOOTPRINT.chess }
     case 'xo':
-      return { x: prop.x, z: prop.z, top, ...FURNITURE_FOOTPRINT.xo }
+      return { x: prop.x, z: prop.z, ...FURNITURE_FOOTPRINT.xo }
     case 'cooler':
-      return { x: prop.x, z: prop.z, top, w: 0.42, d: 0.42 }
+      return { x: prop.x, z: prop.z, w: 0.42, d: 0.42 }
     case 'kitchen':
-      return { x: prop.x, z: prop.z, top, ...oriented(2.4, 0.55, prop.rot ?? 0) }
+      return { x: prop.x, z: prop.z, ...oriented(2.4, 0.55, prop.rot ?? 0) }
     case 'fridge':
-      return { x: prop.x, z: prop.z, top, ...oriented(0.62, 0.55, prop.rot ?? 0) }
+      return { x: prop.x, z: prop.z, ...oriented(0.62, 0.55, prop.rot ?? 0) }
     case 'books':
-      return { x: prop.x, z: prop.z, top, ...oriented(1.15, 0.38, prop.rot ?? 0) }
+      return { x: prop.x, z: prop.z, ...oriented(1.15, 0.38, prop.rot ?? 0) }
     case 'crates':
-      return { x: prop.x, z: prop.z, top, ...oriented(1.45, 0.42, prop.rot ?? 0) }
+      return { x: prop.x, z: prop.z, ...oriented(1.45, 0.42, prop.rot ?? 0) }
     case 'server':
-      return { x: prop.x, z: prop.z, top, ...oriented(0.62, 0.48, prop.rot ?? 0) }
+      return { x: prop.x, z: prop.z, ...oriented(0.62, 0.48, prop.rot ?? 0) }
     case 'bin':
-      return { x: prop.x, z: prop.z, top, w: 0.36, d: 0.36 }
+      return { x: prop.x, z: prop.z, w: 0.36, d: 0.36 }
     default:
       return null
   }
@@ -322,54 +301,16 @@ export const solids: Box[] = [
 
 export const BODY = 0.74
 
-export function blocked(x: number, z: number, feet = 0) {
-  return hits(solids, x, z, BODY, feet) || doorsBlocked(doors, x, z, BODY)
-}
-
-export function meetingTableNear(x: number, z: number) {
-  return props.some((prop) => prop.kind === 'meet' && Math.hypot(prop.x - x, prop.z - z) <= 3.4)
-}
-
-export function landPast(x: number, z: number, peak: number, vx: number, vz: number) {
-  let nextX = x
-  let nextZ = z
-  const moving = Math.hypot(vx, vz) > 0.35
-  for (let pass = 0; pass < 6; pass += 1) {
-    const box = solids.find(
-      (item) =>
-        item.top !== undefined &&
-        peak > item.top &&
-        Math.abs(nextX - item.x) <= item.w / 2 + BODY &&
-        Math.abs(nextZ - item.z) <= item.d / 2 + BODY,
-    )
-    if (!box) break
-    const left = nextX - (box.x - box.w / 2 - BODY)
-    const right = box.x + box.w / 2 + BODY - nextX
-    const down = nextZ - (box.z - box.d / 2 - BODY)
-    const up = box.z + box.d / 2 + BODY - nextZ
-    let side: 'left' | 'right' | 'down' | 'up'
-    if (moving && Math.abs(vx) > Math.abs(vz)) side = vx >= 0 ? 'right' : 'left'
-    else if (moving) side = vz >= 0 ? 'up' : 'down'
-    else {
-      const nearest = Math.min(left, right, down, up)
-      side = nearest === left ? 'left' : nearest === right ? 'right' : nearest === down ? 'down' : 'up'
-    }
-    if (side === 'left') nextX = box.x - box.w / 2 - BODY - 0.05
-    else if (side === 'right') nextX = box.x + box.w / 2 + BODY + 0.05
-    else if (side === 'down') nextZ = box.z - box.d / 2 - BODY - 0.05
-    else nextZ = box.z + box.d / 2 + BODY + 0.05
-  }
-  if (blocked(nextX, nextZ) || wallBlocked(nextX, nextZ, BODY)) return null
-  return { x: nextX, z: nextZ }
+export function blocked(x: number, z: number) {
+  return hits(solids, x, z, BODY) || doorsBlocked(doors, x, z, BODY)
 }
 
 export function wallBlocked(x: number, z: number, radius = 0.22) {
   return hits(walls, x, z, radius) || doorsBlocked(doors, x, z, radius)
 }
 
-function hits(boxes: Box[], x: number, z: number, radius: number, feet = 0) {
+function hits(boxes: Box[], x: number, z: number, radius: number) {
   for (const box of boxes) {
-    if (box.top !== undefined && feet > box.top) continue
     if (Math.abs(x - box.x) <= box.w / 2 + radius && Math.abs(z - box.z) <= box.d / 2 + radius) return true
   }
   return false

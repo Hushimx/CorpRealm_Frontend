@@ -9,7 +9,7 @@ import { ComputerDesktop, useDeskSession } from '../components/ComputerDesktop'
 import { TaskBoard } from '../components/TaskBoard'
 import { boardInReach, OFFICE_BOARDS } from '../office/boards'
 import { clearHeld, holdKey, queueJump, queueSit } from '../office/input'
-import { doors, meetingTableNear, props, rooms } from '../office/layout'
+import { doors, props, rooms } from '../office/layout'
 import { OfficeRoll, VoiceBar, VoiceRoster, floorMates, useOfficeListOpen } from '../components/VoiceOverlay'
 import { useOfficeMedia } from '../net/media'
 import { useOfficeRoom } from '../net/room'
@@ -81,8 +81,6 @@ export function OfficePage() {
   const nearChess = busy || presence.sitting ? null : chessInReach(presence.x, presence.z, STUDIO_CHESS)
   const nearXo = busy || presence.sitting || nearChess ? null : chessInReach(presence.x, presence.z, STUDIO_XO)
   const board = OFFICE_BOARDS.find((item) => item.id === openBoard) ?? null
-  const atMeetingTable = !overview && meetingTableNear(presence.x, presence.z)
-  const showShare = !menuOpen && !board && !computer.open && !chessOpen && !xoOpen && (atMeetingTable || media.sharing)
 
   function openTasks(id: string) {
     clearHeld()
@@ -333,17 +331,6 @@ export function OfficePage() {
           >
             <KeyCap name="e" alt="E" className="h-8 w-auto" />
             Sit down
-          </button>
-        ) : null}
-
-        {showShare ? (
-          <button
-            type="button"
-            disabled={!media.ready}
-            onClick={() => void media.toggleShare()}
-            className="pointer-events-auto absolute bottom-36 left-1/2 -translate-x-1/2 rounded-full bg-paper px-4 py-2 text-sm font-medium text-ink shadow-pop disabled:opacity-40 sm:bottom-40"
-          >
-            {media.sharing ? 'Stop sharing' : 'Share screen'}
           </button>
         ) : null}
 

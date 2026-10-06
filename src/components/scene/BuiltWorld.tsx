@@ -567,7 +567,7 @@ function Walker({
 }: {
   parts: AvatarParts
   spawn: { x: number; z: number }
-  blocked: (x: number, z: number, feet?: number) => boolean
+  blocked: (x: number, z: number) => boolean
   wallBlocked: (x: number, z: number, radius?: number) => boolean
   roomAt: (x: number, z: number) => { id: string; name: string }
   seats: Seat[]
@@ -580,7 +580,6 @@ function Walker({
 }) {
   const body = useRef<Group>(null)
   const spot = useRef({ x: spawn.x, z: spawn.z })
-  const clear = useRef({ x: spawn.x, z: spawn.z })
   const velocity = useRef({ x: 0, z: 0 })
   const height = useRef(0)
   const vertical = useRef(0)
@@ -786,27 +785,17 @@ function Walker({
       velocity.current.z = approach(velocity.current.z, wishZ * topSpeed, rate, dt)
       const nextX = spot.current.x + velocity.current.x * dt
       const nextZ = spot.current.z + velocity.current.z * dt
-      if (!blocked(nextX, spot.current.z, height.current)) spot.current.x = nextX
+      if (!blocked(nextX, spot.current.z)) spot.current.x = nextX
       else velocity.current.x = 0
-      if (!blocked(spot.current.x, nextZ, height.current)) spot.current.z = nextZ
+      if (!blocked(spot.current.x, nextZ)) spot.current.z = nextZ
       else velocity.current.z = 0
       const grounded = height.current <= 0.001 && vertical.current <= 0
-      if (jump && !wasSitting && grounded) vertical.current = 7.3
-      vertical.current -= 16 * dt
+      if (jump && !wasSitting && grounded) vertical.current = 7.4
+      vertical.current -= 26 * dt
       height.current += vertical.current * dt
       if (height.current <= 0) {
         height.current = 0
         vertical.current = 0
-        if (blocked(spot.current.x, spot.current.z)) {
-          spot.current.x = clear.current.x
-          spot.current.z = clear.current.z
-          velocity.current.x = 0
-          velocity.current.z = 0
-        }
-      }
-      if (!blocked(spot.current.x, spot.current.z)) {
-        clear.current.x = spot.current.x
-        clear.current.z = spot.current.z
       }
       const speed = Math.hypot(velocity.current.x, velocity.current.z)
       facing.current = turnToward(facing.current, yaw.current + Math.PI, dt)
@@ -932,7 +921,7 @@ function frameCamera(
   }
   const reach = Math.hypot(bestX - x, bestZ - z)
   const liftCamera = Math.max(0, 4.6 - reach) * 0.38 + Math.max(0, 2.4 - reach) * 0.85
-  const y = Math.min(3.7, Math.max(0.85, 2.28 + pitch * 1.25 + liftCamera + lift * 0.45))
+  const y = Math.min(2.92, Math.max(0.85, 2.28 + pitch * 1.25 + liftCamera + lift * 0.45))
   return {
     x: bestX,
     y,

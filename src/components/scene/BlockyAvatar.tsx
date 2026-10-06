@@ -115,7 +115,7 @@ function stationaryClips(clips: AnimationClip[]) {
     const next = clip.clone()
     next.tracks = next.tracks.filter((track) => {
       if (track.name.startsWith('root.')) return false
-      if (next.name === 'idle' && (track.name.startsWith('head.') || track.name.startsWith('torso.'))) return false
+      if (next.name === 'idle' && (track.name.startsWith('head.') || track.name.startsWith('torso.') || track.name.startsWith('arm-'))) return false
       return true
     })
     return next

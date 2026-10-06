@@ -7,7 +7,7 @@ import { PCFShadowMap, PerspectiveCamera, type Group } from 'three'
 import type { AvatarParts } from '../../avatar/parts'
 import { clearHeld, holdKey, isHeld, queueJump, takeJump, takeSit } from '../../office/input'
 import { boardInReach } from '../../office/boards'
-import { blocked, landPast, plan, props, roomAt, wallBlocked } from '../../office/layout'
+import { blocked, plan, props, roomAt, wallBlocked } from '../../office/layout'
 import { OFFICE_DESKS, deskInFront } from '../../office/desks'
 import { glide, OFFICE_SEATS, resolveSeat, type Seat } from '../../office/seats'
 import { BlockyCharacter } from './BlockyAvatar'
@@ -152,12 +152,9 @@ function Player({
 }) {
   const body = useRef<Group>(null)
   const spot = useRef({ x: SPAWN.x, z: SPAWN.z })
-  const clear = useRef({ x: SPAWN.x, z: SPAWN.z })
   const velocity = useRef({ x: 0, z: 0 })
   const height = useRef(0)
   const vertical = useRef(0)
-  const peak = useRef(0)
-  const travel = useRef({ x: 0, z: -1 })
   const facing = useRef(Math.PI)
   const yaw = useRef(0)
   const pitch = useRef(0.22)
@@ -358,39 +355,17 @@ function Player({
       velocity.current.z = approach(velocity.current.z, wishZ * topSpeed, rate, dt)
       const nextX = spot.current.x + velocity.current.x * dt
       const nextZ = spot.current.z + velocity.current.z * dt
-      if (!blocked(nextX, spot.current.z, height.current)) spot.current.x = nextX
+      if (!blocked(nextX, spot.current.z)) spot.current.x = nextX
       else velocity.current.x = 0
-      if (!blocked(spot.current.x, nextZ, height.current)) spot.current.z = nextZ
+      if (!blocked(spot.current.x, nextZ)) spot.current.z = nextZ
       else velocity.current.z = 0
       const grounded = height.current <= 0.001 && vertical.current <= 0
-      if (jump && !wasSitting && grounded) vertical.current = 7.3
-      vertical.current -= 16 * dt
+      if (jump && !wasSitting && grounded) vertical.current = 7.4
+      vertical.current -= 26 * dt
       height.current += vertical.current * dt
-      if (Math.hypot(velocity.current.x, velocity.current.z) > 0.35) {
-        travel.current.x = velocity.current.x
-        travel.current.z = velocity.current.z
-      }
-      peak.current = Math.max(peak.current, height.current)
       if (height.current <= 0) {
         height.current = 0
         vertical.current = 0
-        if (blocked(spot.current.x, spot.current.z)) {
-          const landed = landPast(spot.current.x, spot.current.z, peak.current, travel.current.x, travel.current.z)
-          if (landed) {
-            spot.current.x = landed.x
-            spot.current.z = landed.z
-          } else {
-            spot.current.x = clear.current.x
-            spot.current.z = clear.current.z
-          }
-          velocity.current.x = 0
-          velocity.current.z = 0
-        }
-        peak.current = 0
-      }
-      if (!blocked(spot.current.x, spot.current.z)) {
-        clear.current.x = spot.current.x
-        clear.current.z = spot.current.z
       }
       const speed = Math.hypot(velocity.current.x, velocity.current.z)
       facing.current = turnToward(facing.current, yaw.current + Math.PI, dt)
@@ -527,7 +502,7 @@ function frameCamera(x: number, lift: number, z: number, yaw: number, pitch: num
   }
   const reach = Math.hypot(bestX - x, bestZ - z)
   const liftCamera = Math.max(0, 4.6 - reach) * 0.38 + Math.max(0, 2.4 - reach) * 0.85
-  const y = Math.min(3.7, Math.max(0.85, 2.28 + pitch * 1.25 + liftCamera + lift * 0.45))
+  const y = Math.min(2.92, Math.max(0.85, 2.28 + pitch * 1.25 + liftCamera + lift * 0.45))
   return {
     x: bestX,
     y,
